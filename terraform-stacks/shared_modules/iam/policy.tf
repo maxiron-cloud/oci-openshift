@@ -4,6 +4,7 @@ resource "oci_identity_policy" "policy_openshift_control_plane_nodes" {
   name           = "${var.cluster_name}_control_plane_nodes"
   statements = [
     "Allow dynamic-group ${oci_identity_dynamic_group.openshift_control_plane_nodes.name} to manage volume-family in compartment id ${var.compartment_ocid}",
+    "Allow dynamic-group ${oci_identity_dynamic_group.openshift_control_plane_nodes.name} to manage file-family in compartment id ${var.compartment_ocid}",
     "Allow dynamic-group ${oci_identity_dynamic_group.openshift_control_plane_nodes.name} to manage instance-family in compartment id ${var.compartment_ocid}",
     "Allow dynamic-group ${oci_identity_dynamic_group.openshift_control_plane_nodes.name} to manage security-lists in compartment id ${var.compartment_ocid}",
     "Allow dynamic-group ${oci_identity_dynamic_group.openshift_control_plane_nodes.name} to manage virtual-network-family in compartment id ${var.compartment_ocid}",
