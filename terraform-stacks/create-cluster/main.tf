@@ -288,6 +288,14 @@ module "manifests" {
   // Dependency on ocir
   use_oracle_cloud_agent = var.use_oracle_cloud_agent
   oca_image_pull_link    = module.ocir.image_pull_command
+
+  // FSS configuration
+  enable_fss_storage_class    = var.enable_fss_storage_class
+  fss_availability_domain     = var.fss_availability_domain
+  fss_compartment_ocid        = var.compartment_ocid
+  fss_mount_target_subnet_ocid =  module.network.op_subnet_private_ocp
+  fss_export_options         = var.fss_export_options
+  fss_encrypt_in_transit     = var.fss_encrypt_in_transit
 }
 
 module "resource_attribution_tags" {

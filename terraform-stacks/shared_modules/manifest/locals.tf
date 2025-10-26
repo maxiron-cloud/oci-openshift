@@ -8,9 +8,15 @@ locals {
   }
 
   oci_csi = templatefile("${path.module}/manifest-templates/01-oci-csi.yml.tpl", {
-    region_metadata    = var.region_metadata
-    oci_driver_version = var.oci_driver_version
-    oci_image_source   = lookup(local.oci_image_sources, var.oci_driver_version, local.default_oci_driver_image)
+    region_metadata              = var.region_metadata
+    oci_driver_version          = var.oci_driver_version
+    oci_image_source            = lookup(local.oci_image_sources, var.oci_driver_version, local.default_oci_driver_image)
+    enable_fss_storage_class    = var.enable_fss_storage_class
+    fss_availability_domain     = var.fss_availability_domain
+    fss_compartment_ocid        = var.fss_compartment_ocid
+    fss_mount_target_subnet_ocid = var.fss_mount_target_subnet_ocid
+    fss_export_options          = var.fss_export_options
+    fss_encrypt_in_transit      = var.fss_encrypt_in_transit
   })
 
   common_config = <<-COMMONCONFIG

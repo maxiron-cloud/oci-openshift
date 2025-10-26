@@ -562,20 +562,33 @@ reclaimPolicy: Delete
 ---
 
 # # https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengcreatingpersistentvolumeclaim_Provisioning_PVCs_on_FSS.htm#contengcreatingpersistentvolumeclaim_topic-Provisioning_PVCs_on_FSS-Using-CSI-Volume-Plugin
-# kind: StorageClass
-# apiVersion: storage.k8s.io/v1
-# metadata:
-#   name: oci-dyn-fss
-# provisioner: fss.csi.oraclecloud.com
-# parameters:
-#   availabilityDomain: <ad-name> # Required
-#   mountTargetOcid: <mt-ocid> | mountTargetSubnetOcid: <mt-subnet-ocid>
-#   compartmentOcid: <compartment-ocid>
-#   kmsKeyOcid: <key-ocid>
-#   exportPath: <path>
-#   exportOptions: "[{<options-in-json-format>}]"
-#   encryptInTransit: "false"
-#   oci.oraclecloud.com/initial-defined-tags-override: '{"<tag-namespace>": {"<tag-key>": "<tag-value>"}}'
-#   oci.oraclecloud.com/initial-freeform-tags-override: '{"<tag-key>": "<tag-value>"}'
+
+%{~ if enable_fss_storage_class ~}
+# oci-csi-13-storage-class-fss.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: oci-dyn-fss
+provisioner: fss.csi.oraclecloud.com
+parameters:
+  availabilityDomain: "${fss_availability_domain}"
+%{~ if fss_compartment_ocid != "" ~}
+  compartmentOcid: "${fss_compartment_ocid}"
+%{~ endif ~}
+%{~ if fss_mount_target_subnet_ocid != "" ~}
+  mountTargetSubnetOcid: "${fss_mount_target_subnet_ocid}"
+%{~ endif ~}
+  exportOptions: "${fss_export_options}"
+  encryptInTransit: "${fss_encrypt_in_transit}"
+  oci.oraclecloud.com/initial-defined-tags-override: '{"openshift-tags": {"openshift-resource": "openshift-virtualization"}}'
+reclaimPolicy: Delete
+allowVolumeExpansion: true
+volumeBindingMode: Immediate
+mountOptions:
+  - nfsvers=3
+  - hard
+  - timeo=600
+  - retrans=2
 
 ---
+%{~ endif ~}

@@ -445,3 +445,34 @@ variable "tag_namespace_compartment_ocid" {
   description = "The OCI of the compartment containing existing instance role tag namespace. Defaults to current compartment."
   default     = ""
 }
+
+# FSS (File Storage Service) StorageClass Configuration
+variable "enable_fss_storage_class" {
+  type        = bool
+  description = "Enable FSS StorageClass in the cluster. When enabled, FSS (File Storage Service) will be available for dynamic provisioning."
+  default     = false
+}
+
+variable "fss_availability_domain" {
+  type        = string
+  description = "Availability Domain for FSS mount target (e.g., UK-LONDON-1-AD-1). This is required when enable_fss_storage_class is true."
+  default     = "UK-LONDON-1-AD-1"
+}
+
+variable "fss_mount_target_subnet_ocid" {
+  type        = string
+  description = "Subnet OCID where the FSS mount target will be created. This should be in the same VCN as your cluster. If not specified, defaults to the private OCP subnet where your nodes run."
+  default     = ""
+}
+
+variable "fss_export_options" {
+  type        = string
+  description = "JSON array of NFS export options for FSS. Example: [{\"source\": \"10.0.0.0/16\", \"access\": \"READ_WRITE\", \"identitySquash\": \"NONE\", \"requirePrivilegedSourcePort\": false}]"
+  default     = "[{\"source\": \"10.0.0.0/16\", \"access\": \"READ_WRITE\", \"identitySquash\": \"NONE\", \"requirePrivilegedSourcePort\": false}]"
+}
+
+variable "fss_encrypt_in_transit" {
+  type        = string
+  description = "Enable encryption in transit for FSS. Valid values: \"true\" or \"false\"."
+  default     = "false"
+}

@@ -98,3 +98,40 @@ variable "oca_image_pull_link" {
 variable "region_metadata" {
   type = string
 }
+
+# FSS (File Storage Service) StorageClass Configuration
+variable "enable_fss_storage_class" {
+  type        = bool
+  description = "Enable FSS StorageClass in the cluster"
+  default     = false
+}
+
+variable "fss_availability_domain" {
+  type        = string
+  description = "Availability Domain for FSS (e.g., UK-LONDON-1-AD-1)"
+  default     = "UK-LONDON-1-AD-1"
+}
+
+variable "fss_compartment_ocid" {
+  type        = string
+  description = "Compartment OCID where FSS resources will be created (automatically set to cluster compartment)"
+  default     = ""
+}
+
+variable "fss_mount_target_subnet_ocid" {
+  type        = string
+  description = "Subnet OCID for FSS mount target"
+  default     = ""
+}
+
+variable "fss_export_options" {
+  type        = string
+  description = "JSON array of export options for FSS"
+  default     = "[{\"source\": \"10.0.0.0/16\", \"access\": \"READ_WRITE\", \"identitySquash\": \"NONE\", \"requirePrivilegedSourcePort\": false}]"
+}
+
+variable "fss_encrypt_in_transit" {
+  type        = string
+  description = "Enable encryption in transit for FSS"
+  default     = "false"
+}
