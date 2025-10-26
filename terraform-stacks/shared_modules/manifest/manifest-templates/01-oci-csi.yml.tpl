@@ -527,6 +527,18 @@ parameters:
   attachment-type: "paravirtualized"
 
 ---
+
+# oci-csi-12b-storage-class-bv-immediate.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: oci-bv-immediate
+provisioner: blockvolume.csi.oraclecloud.com
+reclaimPolicy: Delete
+allowVolumeExpansion: true
+volumeBindingMode: Immediate
+
+---
 %{~ if oci_driver_version == "v1.32.0-UHP" }
 
 # oci-bv-uhp can be used to create Ultra High Performance OCI Block Volume and should be the default when using OpenShift Virtualization. Currently, this StorageClass is only compatable with UHP-enabled CSI drivers e.g. "ghcr.io/dfoster-oracle/cloud-provider-oci-amd64:v1.32.0-UHP-LA"

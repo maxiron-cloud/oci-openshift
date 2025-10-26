@@ -516,3 +516,15 @@ volumeBindingMode: WaitForFirstConsumer
 allowVolumeExpansion: true
 
 ---
+
+# oci-csi-12b-storage-class-bv-immediate.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: oci-bv-immediate
+provisioner: blockvolume.csi.oraclecloud.com
+reclaimPolicy: Delete
+allowVolumeExpansion: true
+volumeBindingMode: Immediate
+
+---
