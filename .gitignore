@@ -24,3 +24,11 @@ checksums/
 **/.terraform/*
 **/.terrafor*
 .terraform.lock.hcl
+
+# Ignore copied shared_modules directories (we use relative paths now)
+terraform-stacks/create-cluster/shared_modules/
+terraform-stacks/add-nodes/shared_modules/
+terraform-stacks/create-instance-role-tags/shared_modules/
+terraform-stacks/create-resource-attribution-tags/shared_modules/
+terraform-stacks/shared_modules/manifest/manifests/
+terraform-stacks/shared_modules/manifest/oci-ccm-csi-drivers/

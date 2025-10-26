@@ -19,7 +19,7 @@ provider "oci" {
 }
 
 module "meta" {
-  source                                  = "./shared_modules/meta"
+  source                                  = "../shared_modules/meta"
   compartment_ocid                        = var.compartment_ocid
   starting_ad_name_cp                     = var.starting_ad_name_cp
   starting_ad_name_compute                = var.starting_ad_name_compute
@@ -29,7 +29,7 @@ module "meta" {
   compute_count                           = var.compute_count
 }
 module "tags" {
-  source = "./shared_modules/tags"
+  source = "../shared_modules/tags"
 
   providers = {
     oci = oci.home
@@ -44,7 +44,7 @@ module "tags" {
 }
 
 module "iam" {
-  source = "./shared_modules/iam"
+  source = "../shared_modules/iam"
 
   providers = {
     oci = oci.home
@@ -65,7 +65,7 @@ module "iam" {
 
 
 module "image" {
-  source = "./shared_modules/image"
+  source = "../shared_modules/image"
 
   depends_on = [module.tags.wait_for_tag_consistency]
 
@@ -83,7 +83,7 @@ module "image" {
 }
 
 module "network" {
-  source = "./shared_modules/network_interface"
+  source = "../shared_modules/network_interface"
 
   depends_on = [module.tags.wait_for_tag_consistency]
 
@@ -110,7 +110,7 @@ module "network" {
 }
 
 module "load_balancer" {
-  source = "./shared_modules/lb"
+  source = "../shared_modules/lb"
 
   compartment_ocid = var.compartment_ocid
   cluster_name     = var.cluster_name
@@ -133,7 +133,7 @@ module "load_balancer" {
 ## Web Server for creating OCP install images and hosting rootfs and ignition files
 module "webserver" {
   count  = var.is_disconnected_installation ? 1 : 0
-  source = "./shared_modules/webserver"
+  source = "../shared_modules/webserver"
 
   is_disconnected_installation = var.is_disconnected_installation
   set_proxy                    = var.set_proxy
@@ -168,7 +168,7 @@ module "webserver" {
 }
 
 module "compute" {
-  source = "./shared_modules/compute"
+  source = "../shared_modules/compute"
 
   compartment_ocid            = var.compartment_ocid
   cluster_name                = var.cluster_name
@@ -227,7 +227,7 @@ module "compute" {
 }
 
 module "dns" {
-  source = "./shared_modules/dns"
+  source = "../shared_modules/dns"
 
   depends_on = [module.network.op_wait_for_vcn_creation]
 
@@ -250,7 +250,7 @@ module "dns" {
 }
 
 module "ocir" {
-  source = "./shared_modules/ocir"
+  source = "../shared_modules/ocir"
 
   compartment_ocid = var.compartment_ocid
   oca_repo_name    = var.oracle_cloud_agent_repo_name
@@ -258,7 +258,7 @@ module "ocir" {
 }
 
 module "manifests" {
-  source = "./shared_modules/manifest"
+  source = "../shared_modules/manifest"
 
   compartment_ocid   = var.compartment_ocid
   oci_driver_version = var.oci_driver_version
@@ -290,16 +290,16 @@ module "manifests" {
   oca_image_pull_link    = module.ocir.image_pull_command
 
   // FSS configuration
-  enable_fss_storage_class    = var.enable_fss_storage_class
-  fss_availability_domain     = var.fss_availability_domain
-  fss_compartment_ocid        = var.compartment_ocid
-  fss_mount_target_subnet_ocid =  module.network.op_subnet_private_ocp
-  fss_export_options         = var.fss_export_options
-  fss_encrypt_in_transit     = var.fss_encrypt_in_transit
+  enable_fss_storage_class     = var.enable_fss_storage_class
+  fss_availability_domain      = var.fss_availability_domain
+  fss_compartment_ocid         = var.compartment_ocid
+  fss_mount_target_subnet_ocid = var.fss_mount_target_subnet_ocid != "" ? var.fss_mount_target_subnet_ocid : module.network.op_subnet_private_ocp
+  fss_export_options           = var.fss_export_options
+  fss_encrypt_in_transit       = var.fss_encrypt_in_transit
 }
 
 module "resource_attribution_tags" {
-  source = "./shared_modules/resource_attribution_tags/find_resource_tags"
+  source = "../shared_modules/resource_attribution_tags/find_resource_tags"
 
   providers = {
     oci = oci.home

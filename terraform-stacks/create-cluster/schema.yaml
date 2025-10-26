@@ -95,6 +95,14 @@ variableGroups:
     - oracle_cloud_agent_repo_name
     - region
 
+- title: "FSS (File Storage Service) StorageClass Configuration"
+  variables:
+    - enable_fss_storage_class
+    - fss_availability_domain
+    - fss_mount_target_subnet_ocid
+    - fss_export_options
+    - fss_encrypt_in_transit
+
 ###########
 # VARIABLES
 ###########
@@ -638,3 +646,50 @@ variables:
     description: Specify an alternative region only if the container image is exported to a location different from the region where the stack is deployed.
     required: true
     visible: use_oracle_cloud_agent
+
+  #
+  # FSS (File Storage Service) StorageClass Configuration Variables
+  #
+  enable_fss_storage_class:
+    type: boolean
+    title: Enable FSS StorageClass
+    description: Enable FSS (File Storage Service) StorageClass for dynamic provisioning of NFS volumes in your OpenShift cluster. When enabled, applications can create PersistentVolumeClaims using the oci-dyn-fss storage class.
+    default: false
+    required: true
+
+  fss_availability_domain:
+    type: oci:identity:availabilitydomain:name
+    title: FSS Availability Domain
+    description: Availability Domain where the FSS mount target will be created. This should match the AD where your cluster nodes are running.
+    dependsOn:
+      compartmentId: ${compartment_ocid}
+    required: true
+    visible: enable_fss_storage_class
+
+  fss_mount_target_subnet_ocid:
+    type: oci:core:subnet:id
+    title: FSS Mount Target Subnet
+    description: Subnet where the FSS mount target will be created. Leave blank to automatically use the private OCP subnet where cluster nodes run. Only specify if you need a custom subnet.
+    dependsOn:
+      compartmentId: ${compartment_ocid}
+    required: false
+    visible: enable_fss_storage_class
+
+  fss_export_options:
+    type: string
+    title: FSS NFS Export Options
+    description: JSON array of NFS export options defining access rules for FSS. Leave blank to use default options allowing cluster subnet access with READ_WRITE permissions.
+    default: ""
+    required: false
+    visible: enable_fss_storage_class
+
+  fss_encrypt_in_transit:
+    type: enum
+    title: FSS Encrypt in Transit
+    description: Enable encryption in transit for FSS volumes
+    enum:
+    - "true"
+    - "false"
+    default: "false"
+    required: true
+    visible: enable_fss_storage_class

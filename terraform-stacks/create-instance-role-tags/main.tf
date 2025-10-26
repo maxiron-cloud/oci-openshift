@@ -19,7 +19,7 @@ provider "oci" {
 }
 
 module "tags" {
-  source = "./shared_modules/tags"
+  source = "../shared_modules/tags"
 
   providers = {
     oci = oci.home

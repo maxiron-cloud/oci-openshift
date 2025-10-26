@@ -18,7 +18,7 @@ provider "oci" {
 }
 
 module "tags" {
-  source = "./shared_modules/tags"
+  source = "../shared_modules/tags"
 
   providers = {
     oci = oci.home
@@ -33,7 +33,7 @@ module "tags" {
 }
 
 module "image" {
-  source = "./shared_modules/image"
+  source = "../shared_modules/image"
 
   depends_on = [module.tags.wait_for_tag_consistency]
 
@@ -50,7 +50,7 @@ module "image" {
   defined_tags = module.resource_attribution_tags.openshift_resource_attribution_tag
 }
 module "meta" {
-  source                                  = "./shared_modules/meta"
+  source                                  = "../shared_modules/meta"
   compartment_ocid                        = var.compartment_ocid
   control_plane_count                     = var.control_plane_count
   compute_count                           = var.compute_count
@@ -63,7 +63,7 @@ module "meta" {
 }
 
 module "network" {
-  source = "./shared_modules/network_interface/network_validator"
+  source = "../shared_modules/network_interface/network_validator"
 
   compartment_ocid                      = var.networking_compartment_ocid
   existing_vcn_id                       = var.existing_vcn_id
@@ -73,7 +73,7 @@ module "network" {
 }
 
 module "compute" {
-  source = "./shared_modules/compute"
+  source = "../shared_modules/compute"
 
   compartment_ocid            = var.compartment_ocid
   cluster_name                = var.cluster_name
@@ -129,7 +129,7 @@ module "compute" {
 }
 
 module "resource_attribution_tags" {
-  source = "./shared_modules/resource_attribution_tags/find_resource_tags"
+  source = "../shared_modules/resource_attribution_tags/find_resource_tags"
 
   providers = {
     oci = oci.home

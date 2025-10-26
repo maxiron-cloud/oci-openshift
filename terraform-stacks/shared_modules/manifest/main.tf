@@ -11,18 +11,18 @@ output "oci_ccm_config" {
 output "dynamic_custom_manifest" {
   description = "The custom manifests to be applied during OpenShift cluster installation process."
   value       = <<-EOT
-    ${file("${path.module}/oci-ccm-csi-drivers/${var.oci_driver_version}/01-oci-ccm.yml")}
+    ${file("${path.module}/../../../custom_manifests/oci-ccm-csi-drivers/${var.oci_driver_version}/01-oci-ccm.yml")}
     ${local.oci_csi}
     ${local.oci_ccm_config_secret}
     ${local.oci_csi_config_secret}
     %{if var.use_oracle_cloud_agent && var.oca_image_pull_link != "" && var.oca_image_pull_link != "no-image-found"}
     ${local.oca_yaml}
     %{endif}
-    ${file("${path.module}/manifests/02-machineconfig-ccm.yml")}
-    ${file("${path.module}/manifests/02-machineconfig-csi.yml")}
-    ${file("${path.module}/manifests/03-machineconfig-consistent-device-path.yml")}
-    ${file("${path.module}/manifests/04-cluster-network.yml")}
-    ${file("${path.module}/manifests/05-oci-eval-user-data.yml")}
+    ${file("${path.module}/../../../custom_manifests/manifests/02-machineconfig-ccm.yml")}
+    ${file("${path.module}/../../../custom_manifests/manifests/02-machineconfig-csi.yml")}
+    ${file("${path.module}/../../../custom_manifests/manifests/03-machineconfig-consistent-device-path.yml")}
+    ${file("${path.module}/../../../custom_manifests/manifests/04-cluster-network.yml")}
+    ${file("${path.module}/../../../custom_manifests/manifests/05-oci-eval-user-data.yml")}
   EOT
 }
 
