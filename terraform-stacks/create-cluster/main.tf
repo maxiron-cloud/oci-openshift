@@ -292,9 +292,9 @@ module "manifests" {
 
   // FSS configuration
   enable_fss_storage_class     = var.enable_fss_storage_class
-  fss_availability_domain      = var.fss_availability_domain
+  fss_availability_domain      = module.meta.ad_name
   fss_compartment_ocid         = var.compartment_ocid
-  fss_mount_target_subnet_ocid = var.fss_mount_target_subnet_ocid != "" ? var.fss_mount_target_subnet_ocid : module.network.op_subnet_private_ocp
+  fss_mount_target_subnet_ocid = module.network.op_subnet_private_ocp
   fss_encrypt_in_transit       = var.fss_encrypt_in_transit
 }
 

@@ -99,8 +99,6 @@ variableGroups:
 - title: "FSS (File Storage Service) StorageClass Configuration"
   variables:
     - enable_fss_storage_class
-    - fss_availability_domain
-    - fss_mount_target_subnet_ocid
     - fss_encrypt_in_transit
 
 ###########
@@ -660,27 +658,9 @@ variables:
   enable_fss_storage_class:
     type: boolean
     title: Enable FSS StorageClass
-    description: Enable FSS (File Storage Service) StorageClass for dynamic provisioning of NFS volumes in your OpenShift cluster. When enabled, applications can create PersistentVolumeClaims using the oci-dyn-fss storage class.
+    description: Enable FSS (File Storage Service) StorageClass for dynamic provisioning of NFS volumes in your OpenShift cluster. FSS mount targets will be automatically created in the same availability domain and subnet as your cluster nodes.
     default: false
     required: true
-
-  fss_availability_domain:
-    type: oci:identity:availabilitydomain:name
-    title: FSS Availability Domain
-    description: Availability Domain where the FSS mount target will be created. This should match the AD where your cluster nodes are running.
-    dependsOn:
-      compartmentId: ${compartment_ocid}
-    required: true
-    visible: enable_fss_storage_class
-
-  fss_mount_target_subnet_ocid:
-    type: oci:core:subnet:id
-    title: FSS Mount Target Subnet
-    description: Subnet where the FSS mount target will be created. Leave blank to automatically use the private OCP subnet where cluster nodes run. Only specify if you need a custom subnet.
-    dependsOn:
-      compartmentId: ${compartment_ocid}
-    required: false
-    visible: enable_fss_storage_class
 
   fss_encrypt_in_transit:
     type: enum

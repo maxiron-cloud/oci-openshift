@@ -459,18 +459,6 @@ variable "enable_fss_storage_class" {
   default     = false
 }
 
-variable "fss_availability_domain" {
-  type        = string
-  description = "Availability Domain for FSS mount target (e.g., UK-LONDON-1-AD-1). This is required when enable_fss_storage_class is true."
-  default     = "UK-LONDON-1-AD-1"
-}
-
-variable "fss_mount_target_subnet_ocid" {
-  type        = string
-  description = "Subnet OCID where the FSS mount target will be created. This should be in the same VCN as your cluster. If not specified, defaults to the private OCP subnet where your nodes run."
-  default     = ""
-}
-
 variable "fss_encrypt_in_transit" {
   type        = string
   description = "Enable encryption in transit for FSS. Valid values: \"true\" or \"false\"."
