@@ -471,12 +471,6 @@ variable "fss_mount_target_subnet_ocid" {
   default     = ""
 }
 
-variable "fss_export_options" {
-  type        = string
-  description = "JSON array of NFS export options for FSS. Example: [{\"source\": \"10.0.0.0/16\", \"access\": \"READ_WRITE\", \"identitySquash\": \"NONE\", \"requirePrivilegedSourcePort\": false}]"
-  default     = "[{\"source\": \"10.0.0.0/16\", \"access\": \"READ_WRITE\", \"identitySquash\": \"NONE\", \"requirePrivilegedSourcePort\": false}]"
-}
-
 variable "fss_encrypt_in_transit" {
   type        = string
   description = "Enable encryption in transit for FSS. Valid values: \"true\" or \"false\"."

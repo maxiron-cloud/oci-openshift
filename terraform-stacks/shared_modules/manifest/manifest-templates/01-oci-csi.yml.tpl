@@ -584,13 +584,14 @@ metadata:
 provisioner: fss.csi.oraclecloud.com
 parameters:
   availabilityDomain: "${fss_availability_domain}"
-%{~ if fss_compartment_ocid != "" ~}
+%{ if fss_compartment_ocid != "" ~}
   compartmentOcid: "${fss_compartment_ocid}"
-%{~ endif ~}
-%{~ if fss_mount_target_subnet_ocid != "" ~}
+%{ endif ~}
+%{ if fss_mount_target_subnet_ocid != "" ~}
   mountTargetSubnetOcid: "${fss_mount_target_subnet_ocid}"
-%{~ endif ~}
-  exportOptions: "${fss_export_options}"
+%{ endif ~}
+  exportOptions: |-
+    [{"source": "10.0.0.0/16", "access": "READ_WRITE", "identitySquash": "NONE", "requirePrivilegedSourcePort": false}]
   encryptInTransit: "${fss_encrypt_in_transit}"
   oci.oraclecloud.com/initial-defined-tags-override: '{"openshift-tags": {"openshift-resource": "openshift-virtualization"}}'
 reclaimPolicy: Delete

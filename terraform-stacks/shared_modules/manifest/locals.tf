@@ -15,7 +15,6 @@ locals {
     fss_availability_domain     = var.fss_availability_domain
     fss_compartment_ocid        = var.fss_compartment_ocid
     fss_mount_target_subnet_ocid = var.fss_mount_target_subnet_ocid
-    fss_export_options          = var.fss_export_options
     fss_encrypt_in_transit      = var.fss_encrypt_in_transit
   })
 

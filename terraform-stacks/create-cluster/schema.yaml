@@ -101,7 +101,6 @@ variableGroups:
     - enable_fss_storage_class
     - fss_availability_domain
     - fss_mount_target_subnet_ocid
-    - fss_export_options
     - fss_encrypt_in_transit
 
 ###########
@@ -680,14 +679,6 @@ variables:
     description: Subnet where the FSS mount target will be created. Leave blank to automatically use the private OCP subnet where cluster nodes run. Only specify if you need a custom subnet.
     dependsOn:
       compartmentId: ${compartment_ocid}
-    required: false
-    visible: enable_fss_storage_class
-
-  fss_export_options:
-    type: string
-    title: FSS NFS Export Options
-    description: JSON array of NFS export options defining access rules for FSS. Leave blank to use default options allowing cluster subnet access with READ_WRITE permissions.
-    default: ""
     required: false
     visible: enable_fss_storage_class
 
