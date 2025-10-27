@@ -73,6 +73,7 @@ variableGroups:
   - zone_dns
   - use_existing_network
   - networking_compartment_ocid
+  - dns_compartment_ocid
   - existing_vcn_id
   - existing_private_ocp_subnet_id
   - existing_private_bare_metal_subnet_id
@@ -475,6 +476,13 @@ variables:
       eq:
         - use_existing_network
         - true
+
+  dns_compartment_ocid:
+    type: oci:identity:compartment:id
+    title: DNS Compartment
+    description: Compartment where DNS zone exists for cert-manager DNS-01 challenge. Leave empty to use the cluster compartment.
+    required: false
+    visible: true
 
   existing_vcn_id:
     type: oci:core:vcn:id

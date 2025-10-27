@@ -25,3 +25,8 @@ variable "defined_tags" {
 variable "networking_compartment_ocid" {
   type = string
 }
+
+variable "dns_compartment_ocid" {
+  type        = string
+  description = "Compartment OCID where DNS zone exists for cert-manager DNS-01 challenge"
+}

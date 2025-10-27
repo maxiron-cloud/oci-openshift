@@ -56,6 +56,7 @@ module "iam" {
   tenancy_ocid                = var.tenancy_ocid
   cluster_name                = var.cluster_name
   networking_compartment_ocid = local.existing_networking_compartment_ocid
+  dns_compartment_ocid        = var.dns_compartment_ocid != "" ? var.dns_compartment_ocid : var.compartment_ocid
 
   // dependency on tags
   op_openshift_tag_namespace     = module.tags.op_openshift_tag_namespace

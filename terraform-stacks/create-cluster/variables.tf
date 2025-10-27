@@ -323,6 +323,12 @@ variable "networking_compartment_ocid" {
   default     = ""
 }
 
+variable "dns_compartment_ocid" {
+  type        = string
+  description = "Compartment OCID where DNS zone exists. Required for cert-manager to manage DNS-01 challenge records for TLS certificates. Leave empty to use the same compartment as the cluster."
+  default     = ""
+}
+
 variable "existing_vcn_id" {
   description = "The OCID of the existing VCN to use when use_existing_network is true."
   type        = string

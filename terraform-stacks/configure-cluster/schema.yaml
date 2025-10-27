@@ -1,0 +1,68 @@
+title: Configure OpenShift Cluster on OCI - v1.0.0
+description: Post-installation configuration for OpenShift clusters on OCI, including image registry setup
+schemaVersion: 1.0.0
+version: "20250126"
+locale: "en"
+
+variableGroups:
+- title: "Cluster Access"
+  variables:
+  - kubeconfig_content
+
+- title: "Cluster Information"
+  variables:
+  - compartment_ocid
+  - dns_compartment_ocid
+
+- title: "Image Registry Configuration"
+  variables:
+  - image_registry_storage_class
+  - image_registry_storage_size
+
+- title: "TLS Certificate Configuration"
+  variables:
+  - letsencrypt_email
+
+###########
+# VARIABLES
+###########
+variables:
+  kubeconfig_content:
+    type: text
+    title: Kubeconfig Content
+    description: Paste the complete content of your kubeconfig file here. Download the kubeconfig from your OpenShift cluster and copy its entire contents. This will be stored securely and used to authenticate to the cluster.
+    required: true
+    multiline: true
+
+  compartment_ocid:
+    type: oci:identity:compartment:id
+    title: Cluster Compartment
+    description: Compartment OCID where the OpenShift cluster exists. Used for DNS zone lookup.
+    required: true
+
+  dns_compartment_ocid:
+    type: oci:identity:compartment:id
+    title: DNS Compartment
+    description: Compartment where DNS zone exists. Leave empty to use the cluster compartment. The DNS zone matching your cluster domain will be automatically detected.
+    required: false
+
+  image_registry_storage_class:
+    type: string
+    title: Image Registry Storage Class
+    description: StorageClass to use for the image registry PVC. Use oci-bv-immediate for single-replica setup.
+    default: "oci-bv-immediate"
+    required: true
+
+  image_registry_storage_size:
+    type: string
+    title: Image Registry Storage Size
+    description: Size of persistent volume for image registry (e.g., 100Gi, 200Gi, 500Gi)
+    default: "100Gi"
+    required: true
+
+  letsencrypt_email:
+    type: string
+    title: Let's Encrypt Email
+    description: Email address for Let's Encrypt account registration and certificate expiry notifications. This email will receive alerts when certificates are about to expire.
+    required: true
+
