@@ -590,8 +590,15 @@ parameters:
 %{ if fss_mount_target_subnet_ocid != "" ~}
   mountTargetSubnetOcid: "${fss_mount_target_subnet_ocid}"
 %{ endif ~}
-  exportOptions: |-
-    [{"source": "10.0.0.0/16", "access": "READ_WRITE", "identitySquash": "NONE", "requirePrivilegedSourcePort": false}]
+  exportOptions: |
+    [
+      {
+        "source": "10.0.0.0/16",
+        "access": "READ_WRITE",
+        "identitySquash": "NONE",
+        "requirePrivilegedSourcePort": false
+      }
+    ]
   encryptInTransit: "${fss_encrypt_in_transit}"
   oci.oraclecloud.com/initial-defined-tags-override: '{"openshift-tags": {"openshift-resource": "openshift-virtualization"}}'
 reclaimPolicy: Delete
