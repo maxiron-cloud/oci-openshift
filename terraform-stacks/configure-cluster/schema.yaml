@@ -64,5 +64,6 @@ variables:
     type: string
     title: Let's Encrypt Email
     description: Email address for Let's Encrypt account registration and certificate expiry notifications. This email will receive alerts when certificates are about to expire.
-    required: true
+    default: "cloud@maxiron.com"
+    required: false
 

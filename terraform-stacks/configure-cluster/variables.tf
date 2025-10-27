@@ -1,13 +1,6 @@
-variable "kubeconfig_path" {
-  type        = string
-  description = "Path to kubeconfig file for cluster access. Leave empty when using kubeconfig_content in ORM."
-  default     = ""
-}
-
 variable "kubeconfig_content" {
   type        = string
-  description = "Content of the kubeconfig file (base64 encoded or plain text). Use this when running in ORM instead of kubeconfig_path."
-  default     = ""
+  description = "Content of the kubeconfig file. Paste the complete content of your kubeconfig file here."
   sensitive   = true
 }
 
@@ -37,5 +30,6 @@ variable "dns_compartment_ocid" {
 variable "letsencrypt_email" {
   type        = string
   description = "Email address for Let's Encrypt account notifications and certificate expiry alerts"
+  default     = "cloud@maxiron.com"
 }
 

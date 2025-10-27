@@ -1,16 +1,15 @@
-# Create local kubeconfig file from content (for ORM)
+# Create local kubeconfig file from content
 resource "local_file" "kubeconfig" {
-  count    = var.kubeconfig_content != "" ? 1 : 0
   content  = var.kubeconfig_content
   filename = "${path.module}/kubeconfig"
 }
 
 locals {
-  kubeconfig_path = var.kubeconfig_content != "" ? local_file.kubeconfig[0].filename : var.kubeconfig_path
+  kubeconfig_path = local_file.kubeconfig.filename
   
   # Auto-detect cluster domain from kubeconfig
-  kubeconfig_data = yamldecode(var.kubeconfig_content != "" ? var.kubeconfig_content : file(var.kubeconfig_path))
-  cluster_api_url = local.kubeconfig_data.clusters[0].cluster.server
+  kubeconfig_data     = yamldecode(var.kubeconfig_content)
+  cluster_api_url     = local.kubeconfig_data.clusters[0].cluster.server
   # Extract base domain from API URL (e.g., https://api.ocp.example.com:6443 -> ocp.example.com)
   cluster_base_domain = replace(replace(local.cluster_api_url, "https://api.", ""), ":6443", "")
   # Apps domain for wildcard certificate

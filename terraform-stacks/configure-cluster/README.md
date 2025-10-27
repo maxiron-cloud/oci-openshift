@@ -37,82 +37,40 @@ export KUBECONFIG=/path/to/auth/kubeconfig
 
 ## Usage
 
-The stack supports two modes of operation:
-
-### Local Execution (Using Kubeconfig File Path)
-
-```bash
-cd terraform-stacks/configure-cluster
-
-# Initialize Terraform
-terraform init
-
-# Plan the configuration
-terraform plan \
-  -var="kubeconfig_path=/path/to/kubeconfig" \
-  -var="compartment_ocid=ocid1.compartment.oc1..." \
-  -var="letsencrypt_email=admin@example.com"
-
-# Apply the configuration
-terraform apply \
-  -var="kubeconfig_path=/path/to/kubeconfig" \
-  -var="compartment_ocid=ocid1.compartment.oc1..." \
-  -var="letsencrypt_email=admin@example.com"
-```
-
-### Oracle Resource Manager (Using Kubeconfig Content)
-
-When using ORM, you cannot reference local file paths. Instead, paste the kubeconfig content directly:
+This stack is designed to run in Oracle Resource Manager (ORM):
 
 1. **Download your kubeconfig** from the OpenShift cluster
 2. **Open the kubeconfig file** and copy its entire contents
 3. In **ORM Stack Configuration**, paste the content into the **"Kubeconfig Content"** field
-4. The stack will automatically create a temporary file and use it for authentication
+4. Configure the required variables (compartment OCID)
+5. Apply the stack
 
-### Custom Storage Size
+The stack will automatically:
+- Create a temporary kubeconfig file
+- Detect your cluster domain from the API server URL
+- Find the matching DNS zone in OCI
+- Configure the image registry and issue TLS certificates
 
-```bash
-terraform apply \
-  -var="kubeconfig_path=/path/to/kubeconfig" \
-  -var="compartment_ocid=ocid1.compartment.oc1..." \
-  -var="letsencrypt_email=admin@example.com" \
-  -var="image_registry_storage_size=200Gi"
-```
+### Configuration Options
 
-### Using Different StorageClass
+In ORM, you can customize the following settings:
 
-```bash
-terraform apply \
-  -var="kubeconfig_path=/path/to/kubeconfig" \
-  -var="compartment_ocid=ocid1.compartment.oc1..." \
-  -var="letsencrypt_email=admin@example.com" \
-  -var="image_registry_storage_class=oci-bv"
-```
-
-### Separate DNS Compartment
-
-```bash
-terraform apply \
-  -var="kubeconfig_path=/path/to/kubeconfig" \
-  -var="compartment_ocid=ocid1.compartment.oc1..." \
-  -var="dns_compartment_ocid=ocid1.compartment.oc1.dns..." \
-  -var="letsencrypt_email=admin@example.com"
-```
+- **Image Registry Storage Size**: Default 100Gi, can be increased (e.g., 200Gi, 500Gi)
+- **Storage Class**: Default `oci-bv-immediate`, can use `oci-bv` for WaitForFirstConsumer
+- **DNS Compartment**: Leave empty to use cluster compartment, or specify if DNS zone is in different compartment
+- **Let's Encrypt Email**: Defaults to `cloud@maxiron.com`, can be changed if needed
 
 
 ## Variables
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
-| `kubeconfig_path` | Path to kubeconfig file (local execution only) | `""` | No* |
-| `kubeconfig_content` | Content of kubeconfig file (ORM execution) | `""` | No* |
+| `kubeconfig_content` | Content of kubeconfig file | - | Yes |
 | `compartment_ocid` | Compartment OCID where cluster exists | - | Yes |
 | `dns_compartment_ocid` | Compartment OCID where DNS zone exists | `""` (uses compartment_ocid) | No |
-| `letsencrypt_email` | Email for Let's Encrypt notifications | - | Yes |
+| `letsencrypt_email` | Email for Let's Encrypt notifications | `cloud@maxiron.com` | No |
 | `image_registry_storage_size` | Size of PVC for image registry | `100Gi` | No |
 | `image_registry_storage_class` | StorageClass for image registry PVC | `oci-bv-immediate` | No |
-
-**Note**: Either `kubeconfig_path` (for local) or `kubeconfig_content` (for ORM) must be provided.
 
 ## Outputs
 
