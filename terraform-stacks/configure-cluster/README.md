@@ -37,16 +37,46 @@ export KUBECONFIG=/path/to/auth/kubeconfig
 
 ## Usage
 
-This stack is designed to run in Oracle Resource Manager (ORM):
+### **For ORM (Oracle Resource Manager):**
 
 1. **Download your kubeconfig** from the OpenShift cluster
-2. **Open the kubeconfig file** and copy its entire contents
-3. In **ORM Stack Configuration**, paste the content into the **"Kubeconfig Content"** field
-4. Configure the required variables (compartment OCID)
-5. Apply the stack
+2. **Upload kubeconfig to OCI Object Storage:**
+   ```bash
+   oci os object put \
+     --bucket-name my-bucket \
+     --file kubeconfig \
+     --name cluster-kubeconfig
+   ```
+3. **Create a Pre-Authenticated Request (PAR):**
+   - In OCI Console: Object Storage → Bucket → Object → Create Pre-Authenticated Request
+   - Or CLI:
+   ```bash
+   oci os preauth-request create \
+     --bucket-name my-bucket \
+     --object-name cluster-kubeconfig \
+     --access-type ObjectRead \
+     --time-expires 2025-12-31T23:59:59Z \
+     --name kubeconfig-par
+   ```
+4. **Copy the PAR URL** (looks like: `https://objectstorage.uk-london-1.oraclecloud.com/p/...`)
+5. In **ORM Stack Configuration**, paste the PAR URL into the **"Kubeconfig PAR URL"** field
+6. Configure other variables and apply
+
+### **For Local Terraform CLI (Alternative):**
+
+If you prefer to run locally without ORM restrictions:
+
+```bash
+cd terraform-stacks/configure-cluster
+terraform init
+terraform apply \
+  -var="kubeconfig_par_url=https://objectstorage...../kubeconfig" \
+  -var="compartment_ocid=ocid1.compartment.oc1..." \
+  -var="letsencrypt_email=cloud@maxiron.com"
+```
 
 The stack will automatically:
-- Create a temporary kubeconfig file
+- Fetch kubeconfig from Object Storage
 - Detect your cluster domain from the API server URL
 - Find the matching DNS zone in OCI
 - Configure the image registry and issue TLS certificates
@@ -65,7 +95,7 @@ In ORM, you can customize the following settings:
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
-| `kubeconfig_content` | Content of kubeconfig file | - | Yes |
+| `kubeconfig_par_url` | PAR URL to fetch kubeconfig from Object Storage | - | Yes |
 | `compartment_ocid` | Compartment OCID where cluster exists | - | Yes |
 | `dns_compartment_ocid` | Compartment OCID where DNS zone exists | `""` (uses compartment_ocid) | No |
 | `letsencrypt_email` | Email for Let's Encrypt notifications | `cloud@maxiron.com` | No |

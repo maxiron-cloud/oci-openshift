@@ -1,6 +1,11 @@
-# Create local kubeconfig file from content
+# Fetch kubeconfig from Object Storage using PAR URL
+data "http" "kubeconfig" {
+  url = var.kubeconfig_par_url
+}
+
+# Create local kubeconfig file from fetched content
 resource "local_file" "kubeconfig" {
-  content  = var.kubeconfig_content
+  content  = data.http.kubeconfig.response_body
   filename = "${path.module}/kubeconfig"
 }
 
@@ -8,7 +13,7 @@ locals {
   kubeconfig_path = local_file.kubeconfig.filename
   
   # Auto-detect cluster domain from kubeconfig
-  kubeconfig_data     = yamldecode(var.kubeconfig_content)
+  kubeconfig_data     = yamldecode(data.http.kubeconfig.response_body)
   cluster_api_url     = local.kubeconfig_data.clusters[0].cluster.server
   # Extract base domain from API URL (e.g., https://api.ocp.example.com:6443 -> ocp.example.com)
   cluster_base_domain = replace(replace(local.cluster_api_url, "https://api.", ""), ":6443", "")

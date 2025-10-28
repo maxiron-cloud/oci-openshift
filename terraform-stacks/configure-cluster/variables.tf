@@ -1,7 +1,6 @@
-variable "kubeconfig_content" {
+variable "kubeconfig_par_url" {
   type        = string
-  description = "Content of the kubeconfig file. Paste the complete content of your kubeconfig file here."
-  sensitive   = true
+  description = "Pre-Authenticated Request (PAR) URL to fetch kubeconfig from OCI Object Storage. Upload your kubeconfig to Object Storage and create a PAR URL."
 }
 
 variable "image_registry_storage_size" {

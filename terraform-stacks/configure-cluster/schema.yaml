@@ -27,12 +27,11 @@ variableGroups:
 # VARIABLES
 ###########
 variables:
-  kubeconfig_content:
-    type: text
-    title: Kubeconfig Content
-    description: Paste the complete content of your kubeconfig file here. Download the kubeconfig from your OpenShift cluster and copy its entire contents. This will be stored securely and used to authenticate to the cluster.
+  kubeconfig_par_url:
+    type: string
+    title: Kubeconfig PAR URL
+    description: Upload your kubeconfig to OCI Object Storage and create a Pre-Authenticated Request (PAR) URL. Paste the PAR URL here. The kubeconfig will be fetched securely from Object Storage.
     required: true
-    multiline: true
 
   compartment_ocid:
     type: oci:identity:compartment:id
