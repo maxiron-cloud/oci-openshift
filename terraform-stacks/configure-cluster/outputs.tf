@@ -38,7 +38,12 @@ output "wildcard_certificate_secret" {
 }
 
 output "dns_zone_ocid" {
-  description = "Auto-detected DNS zone OCID"
-  value       = data.oci_dns_zones.cluster_zone.zones[0].id
+  description = "DNS zone OCID being used"
+  value       = local.dns_zone_id != "" ? local.dns_zone_id : "N/A - dns_zone_name not provided"
+}
+
+output "dns_zone_name" {
+  description = "DNS zone name provided"
+  value       = var.dns_zone_name != "" ? var.dns_zone_name : "N/A - not provided"
 }
 

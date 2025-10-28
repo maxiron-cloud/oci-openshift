@@ -37,6 +37,17 @@ export KUBECONFIG=/path/to/auth/kubeconfig
 
 ## Usage
 
+## DNS Zone Requirements
+
+Provide your OCI DNS zone name for TLS certificate management:
+
+**Example:** 
+- Cluster domain: `test.oracle.maxiron.cloud`
+- DNS zone name to provide: `oracle.maxiron.cloud`
+- Wildcard cert issued for: `*.apps.test.oracle.maxiron.cloud`
+
+If DNS zone name is not provided (left empty), cert-manager setup is skipped (image registry still configured).
+
 ### **For ORM (Oracle Resource Manager):**
 
 1. **Download your kubeconfig** from the OpenShift cluster
@@ -98,6 +109,7 @@ In ORM, you can customize the following settings:
 | `kubeconfig_par_url` | PAR URL to fetch kubeconfig from Object Storage | - | Yes |
 | `compartment_ocid` | Compartment OCID where cluster exists | - | Yes |
 | `dns_compartment_ocid` | Compartment OCID where DNS zone exists | `""` (uses compartment_ocid) | No |
+| `dns_zone_name` | OCI DNS zone name (e.g., oracle.maxiron.cloud) | `""` (skips TLS setup) | No |
 | `letsencrypt_email` | Email for Let's Encrypt notifications | `cloud@maxiron.com` | No |
 | `image_registry_storage_size` | Size of PVC for image registry | `100Gi` | No |
 | `image_registry_storage_class` | StorageClass for image registry PVC | `oci-bv-immediate` | No |

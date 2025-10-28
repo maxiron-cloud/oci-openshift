@@ -3,15 +3,7 @@ data "http" "kubeconfig" {
   url = var.kubeconfig_par_url
 }
 
-# Create local kubeconfig file from fetched content
-resource "local_file" "kubeconfig" {
-  content  = data.http.kubeconfig.response_body
-  filename = "${path.module}/kubeconfig"
-}
-
 locals {
-  kubeconfig_path = local_file.kubeconfig.filename
-  
   # Auto-detect cluster domain from kubeconfig
   kubeconfig_data     = yamldecode(data.http.kubeconfig.response_body)
   cluster_api_url     = local.kubeconfig_data.clusters[0].cluster.server
@@ -29,19 +21,33 @@ provider "oci" {
   # Uses OCI CLI or instance principal authentication
 }
 
+# Kubernetes provider configuration - use config content directly to avoid file dependency
 provider "kubernetes" {
-  config_path = local.kubeconfig_path
+  host                   = local.kubeconfig_data.clusters[0].cluster.server
+  cluster_ca_certificate = base64decode(local.kubeconfig_data.clusters[0].cluster["certificate-authority-data"])
+  client_certificate     = base64decode(local.kubeconfig_data.users[0].user["client-certificate-data"])
+  client_key             = base64decode(local.kubeconfig_data.users[0].user["client-key-data"])
 }
 
+# Kubectl provider configuration - use config content directly
 provider "kubectl" {
-  config_path = local.kubeconfig_path
+  host                   = local.kubeconfig_data.clusters[0].cluster.server
+  cluster_ca_certificate = base64decode(local.kubeconfig_data.clusters[0].cluster["certificate-authority-data"])
+  client_certificate     = base64decode(local.kubeconfig_data.users[0].user["client-certificate-data"])
+  client_key             = base64decode(local.kubeconfig_data.users[0].user["client-key-data"])
+  load_config_file       = false
 }
 
-# Auto-detect DNS zone OCID by looking up the zone that matches cluster base domain
+# Lookup DNS zone OCID from provided zone name
 data "oci_dns_zones" "cluster_zone" {
+  count          = var.dns_zone_name != "" ? 1 : 0
   compartment_id = local.dns_compartment
-  name           = local.cluster_base_domain
+  name           = var.dns_zone_name
   scope          = "GLOBAL"
+}
+
+locals {
+  dns_zone_id = var.dns_zone_name != "" && length(data.oci_dns_zones.cluster_zone) > 0 && length(data.oci_dns_zones.cluster_zone[0].zones) > 0 ? data.oci_dns_zones.cluster_zone[0].zones[0].id : ""
 }
 
 module "image_registry" {
@@ -55,7 +61,7 @@ module "cert_manager" {
   source = "./modules/cert-manager"
 
   cluster_domain        = local.apps_domain
-  dns_zone_ocid        = data.oci_dns_zones.cluster_zone.zones[0].id
+  dns_zone_ocid        = local.dns_zone_id
   dns_compartment_ocid = local.dns_compartment
   letsencrypt_email    = var.letsencrypt_email
 

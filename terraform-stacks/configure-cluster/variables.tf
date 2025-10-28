@@ -26,6 +26,12 @@ variable "dns_compartment_ocid" {
   default     = ""
 }
 
+variable "dns_zone_name" {
+  type        = string
+  description = "DNS zone name in OCI DNS (e.g., oracle.maxiron.cloud). Leave empty to skip TLS certificate setup."
+  default     = ""
+}
+
 variable "letsencrypt_email" {
   type        = string
   description = "Email address for Let's Encrypt account notifications and certificate expiry alerts"

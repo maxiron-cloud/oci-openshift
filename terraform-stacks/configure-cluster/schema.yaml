@@ -13,6 +13,7 @@ variableGroups:
   variables:
   - compartment_ocid
   - dns_compartment_ocid
+  - dns_zone_name
 
 - title: "Image Registry Configuration"
   variables:
@@ -42,7 +43,13 @@ variables:
   dns_compartment_ocid:
     type: oci:identity:compartment:id
     title: DNS Compartment
-    description: Compartment where DNS zone exists. Leave empty to use the cluster compartment. The DNS zone matching your cluster domain will be automatically detected.
+    description: Compartment where DNS zone exists. Leave empty to use the cluster compartment.
+    required: false
+
+  dns_zone_name:
+    type: string
+    title: DNS Zone Name
+    description: "OCI DNS zone name for TLS certificates (e.g., oracle.maxiron.cloud). Leave empty to skip TLS certificate setup. Example: if your cluster is test.oracle.maxiron.cloud, enter oracle.maxiron.cloud"
     required: false
 
   image_registry_storage_class:

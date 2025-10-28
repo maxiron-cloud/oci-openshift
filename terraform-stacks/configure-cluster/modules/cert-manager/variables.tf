@@ -5,7 +5,8 @@ variable "cluster_domain" {
 
 variable "dns_zone_ocid" {
   type        = string
-  description = "OCI DNS Zone OCID for DNS-01 challenge"
+  description = "OCI DNS Zone OCID for DNS-01 challenge. Leave empty to skip TLS certificate setup."
+  default     = ""
 }
 
 variable "dns_compartment_ocid" {

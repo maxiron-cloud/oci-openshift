@@ -20,27 +20,37 @@ terraform {
   }
 }
 
+# Only setup cert-manager if DNS zone is available
+locals {
+  enable_tls = var.dns_zone_ocid != ""
+}
+
 # Fetch cert-manager installation manifest
 data "http" "cert_manager_manifest" {
-  url = "https://github.com/cert-manager/cert-manager/releases/download/${var.cert_manager_version}/cert-manager.yaml"
+  count = local.enable_tls ? 1 : 0
+  url   = "https://github.com/cert-manager/cert-manager/releases/download/${var.cert_manager_version}/cert-manager.yaml"
 }
 
-# Split the manifest into individual resources and apply them
-locals {
-  # Split the YAML manifest by document separator
-  cert_manager_manifests = split("---", data.http.cert_manager_manifest.response_body)
+# Create a temporary file with cert-manager manifest
+resource "local_file" "cert_manager_temp" {
+  count    = local.enable_tls ? 1 : 0
+  content  = data.http.cert_manager_manifest[0].response_body
+  filename = "${path.module}/cert-manager-temp.yaml"
+}
+
+# Use kubectl_path_documents to parse the manifest file
+data "kubectl_path_documents" "cert_manager_manifests" {
+  count   = local.enable_tls ? 1 : 0
+  pattern = "${path.module}/cert-manager-temp.yaml"
   
-  # Filter out empty documents
-  cert_manager_docs = [
-    for doc in local.cert_manager_manifests : doc
-    if trimspace(doc) != ""
-  ]
+  depends_on = [local_file.cert_manager_temp]
 }
 
-# Apply cert-manager manifests
+# Apply cert-manager manifests using for_each which doesn't have the count limitation
 resource "kubectl_manifest" "cert_manager" {
-  count     = length(local.cert_manager_docs)
-  yaml_body = local.cert_manager_docs[count.index]
+  for_each = local.enable_tls ? data.kubectl_path_documents.cert_manager_manifests[0].manifests : {}
+  
+  yaml_body = each.value
 
   server_side_apply = true
   wait              = true
@@ -48,6 +58,8 @@ resource "kubectl_manifest" "cert_manager" {
 
 # Create cert-manager namespace explicitly first (if not created by manifest)
 resource "kubernetes_namespace_v1" "cert_manager" {
+  count = local.enable_tls ? 1 : 0
+  
   metadata {
     name = "cert-manager"
   }
@@ -61,6 +73,7 @@ resource "kubernetes_namespace_v1" "cert_manager" {
 
 # Wait for cert-manager webhook to be ready
 resource "time_sleep" "wait_for_cert_manager" {
+  count           = local.enable_tls ? 1 : 0
   create_duration = "90s"
 
   depends_on = [kubectl_manifest.cert_manager]
@@ -68,22 +81,30 @@ resource "time_sleep" "wait_for_cert_manager" {
 
 # Fetch OCI DNS webhook manifest
 data "http" "oci_dns_webhook_manifest" {
-  url = "https://github.com/dn13/cert-manager-webhook-oci/releases/download/v${var.oci_dns_webhook_version}/rendered-manifest.yaml"
+  count = local.enable_tls ? 1 : 0
+  url   = "https://github.com/dn13/cert-manager-webhook-oci/releases/download/v${var.oci_dns_webhook_version}/rendered-manifest.yaml"
 }
 
-# Split and apply OCI DNS webhook manifests
-locals {
-  oci_webhook_manifests = split("---", data.http.oci_dns_webhook_manifest.response_body)
+# Create a temporary file with OCI DNS webhook manifest
+resource "local_file" "oci_webhook_temp" {
+  count    = local.enable_tls ? 1 : 0
+  content  = data.http.oci_dns_webhook_manifest[0].response_body
+  filename = "${path.module}/oci-webhook-temp.yaml"
+}
+
+# Use kubectl_path_documents to parse the webhook manifest file
+data "kubectl_path_documents" "oci_webhook_manifests" {
+  count   = local.enable_tls ? 1 : 0
+  pattern = "${path.module}/oci-webhook-temp.yaml"
   
-  oci_webhook_docs = [
-    for doc in local.oci_webhook_manifests : doc
-    if trimspace(doc) != ""
-  ]
+  depends_on = [local_file.oci_webhook_temp]
 }
 
+# Apply OCI DNS webhook manifests using for_each
 resource "kubectl_manifest" "oci_dns_webhook" {
-  count     = length(local.oci_webhook_docs)
-  yaml_body = local.oci_webhook_docs[count.index]
+  for_each = local.enable_tls ? data.kubectl_path_documents.oci_webhook_manifests[0].manifests : {}
+
+  yaml_body = each.value
 
   server_side_apply = true
   wait              = true
@@ -93,6 +114,7 @@ resource "kubectl_manifest" "oci_dns_webhook" {
 
 # Wait for OCI DNS webhook to be ready
 resource "time_sleep" "wait_for_webhook" {
+  count           = local.enable_tls ? 1 : 0
   create_duration = "30s"
 
   depends_on = [kubectl_manifest.oci_dns_webhook]
@@ -100,6 +122,8 @@ resource "time_sleep" "wait_for_webhook" {
 
 # Create ConfigMap for OCI DNS webhook to use Instance Principal
 resource "kubernetes_config_map_v1" "oci_dns_config" {
+  count = local.enable_tls ? 1 : 0
+  
   metadata {
     name      = "oci-dns-config"
     namespace = "cert-manager"
@@ -115,6 +139,8 @@ resource "kubernetes_config_map_v1" "oci_dns_config" {
 
 # Create ClusterIssuer for Let's Encrypt production with OCI DNS-01
 resource "kubectl_manifest" "letsencrypt_issuer" {
+  count = local.enable_tls ? 1 : 0
+  
   yaml_body = <<-YAML
     apiVersion: cert-manager.io/v1
     kind: ClusterIssuer
@@ -142,6 +168,8 @@ resource "kubectl_manifest" "letsencrypt_issuer" {
 
 # Create openshift-ingress namespace if it doesn't exist
 resource "kubernetes_namespace_v1" "openshift_ingress" {
+  count = local.enable_tls ? 1 : 0
+  
   metadata {
     name = "openshift-ingress"
   }
@@ -153,6 +181,8 @@ resource "kubernetes_namespace_v1" "openshift_ingress" {
 
 # Request wildcard certificate
 resource "kubectl_manifest" "wildcard_cert" {
+  count = local.enable_tls ? 1 : 0
+  
   yaml_body = <<-YAML
     apiVersion: cert-manager.io/v1
     kind: Certificate
@@ -179,6 +209,7 @@ resource "kubectl_manifest" "wildcard_cert" {
 
 # Wait for certificate to be issued
 resource "time_sleep" "wait_for_certificate" {
+  count           = local.enable_tls ? 1 : 0
   create_duration = "5m"
 
   depends_on = [kubectl_manifest.wildcard_cert]
@@ -186,6 +217,8 @@ resource "time_sleep" "wait_for_certificate" {
 
 # Patch IngressController to use the certificate
 resource "kubectl_manifest" "ingress_default_cert" {
+  count = local.enable_tls ? 1 : 0
+  
   yaml_body = <<-YAML
     apiVersion: operator.openshift.io/v1
     kind: IngressController
