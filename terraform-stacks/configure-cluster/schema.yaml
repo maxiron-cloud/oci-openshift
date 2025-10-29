@@ -12,8 +12,6 @@ variableGroups:
 - title: "Cluster Information"
   variables:
   - compartment_ocid
-  - dns_compartment_ocid
-  - dns_zone_name
 
 - title: "Image Registry Configuration"
   variables:
@@ -22,7 +20,9 @@ variableGroups:
 
 - title: "TLS Certificate Configuration"
   variables:
+  - dns_zone_name
   - letsencrypt_email
+
 
 ###########
 # VARIABLES
@@ -36,21 +36,9 @@ variables:
 
   compartment_ocid:
     type: oci:identity:compartment:id
-    title: Cluster Compartment
-    description: Compartment OCID where the OpenShift cluster exists. Used for DNS zone lookup.
+    title: Compartment
+    description: Compartment OCID where the OpenShift cluster and DNS zone exist.
     required: true
-
-  dns_compartment_ocid:
-    type: oci:identity:compartment:id
-    title: DNS Compartment
-    description: Compartment where DNS zone exists. Leave empty to use the cluster compartment.
-    required: false
-
-  dns_zone_name:
-    type: string
-    title: DNS Zone Name
-    description: "OCI DNS zone name for TLS certificates (e.g., oracle.maxiron.cloud). Leave empty to skip TLS certificate setup. Example: if your cluster is test.oracle.maxiron.cloud, enter oracle.maxiron.cloud"
-    required: false
 
   image_registry_storage_class:
     type: string
@@ -66,10 +54,17 @@ variables:
     default: "100Gi"
     required: true
 
+  dns_zone_name:
+    type: string
+    title: DNS Zone Name
+    description: "OCI DNS zone name for TLS certificates (e.g., oracle.maxiron.cloud). Leave empty to skip TLS certificate setup and use self-signed certificates."
+    required: false
+
   letsencrypt_email:
     type: string
     title: Let's Encrypt Email
-    description: Email address for Let's Encrypt account registration and certificate expiry notifications. This email will receive alerts when certificates are about to expire.
+    description: Email address for Let's Encrypt account registration and certificate expiry notifications. Defaults to cloud@maxiron.com.
     default: "cloud@maxiron.com"
     required: false
+
 

@@ -5,7 +5,8 @@ This Terraform stack provides post-installation configuration for OpenShift clus
 ## Features
 
 - **Image Registry Configuration**: Configures the internal OpenShift image registry with persistent storage and exposes the default route for external access
-- **TLS Certificate Management**: Automatically provisions Let's Encrypt wildcard certificates using cert-manager and OCI DNS-01 challenge validation
+- **Automated TLS Certificate Management**: Installs cert-manager via OpenShift Operator, deploys OCI DNS webhook, and provisions Let's Encrypt certificates for both apps ingress and API server
+- **DNS-01 Challenge Support**: Enables wildcard certificates using OCI DNS with Instance Principal authentication
 - **Extensible Design**: Modular structure allows easy addition of more post-installation configurations
 
 ## Prerequisites
@@ -13,9 +14,41 @@ This Terraform stack provides post-installation configuration for OpenShift clus
 1. **OpenShift Cluster**: A deployed OpenShift cluster on OCI (use the `create-cluster` stack with DNS IAM policies enabled)
 2. **Kubeconfig File**: Access to the cluster's kubeconfig file
 3. **Cluster Access**: Network connectivity to the cluster API endpoint
-4. **DNS Zone**: An OCI DNS zone matching your cluster domain with proper NS delegation
-5. **IAM Policies**: Control plane nodes must have DNS management permissions (configured in create-cluster stack)
+4. **OCI DNS Zone**: A DNS zone in OCI DNS matching your cluster domain (e.g., oracle.maxiron.cloud for cluster test.oracle.maxiron.cloud)
+5. **IAM Policies**: Control plane nodes must have DNS management permissions (automatically configured by create-cluster stack)
 6. **Terraform**: Version >= 1.0
+
+## Certificate Management
+
+This stack provides **fully automated TLS certificate management** using:
+
+### How It Works
+
+1. **cert-manager Installation**: Deploys cert-manager via Red Hat OpenShift Operator from the certified operator catalog
+2. **OCI DNS Webhook**: Installs [giovannicandido/cert-manager-webhook-oci](https://github.com/giovannicandido/cert-manager-webhook-oci) for DNS-01 challenge validation
+3. **Instance Principal Authentication**: No credentials needed - uses the existing dynamic group IAM policy for control plane nodes
+4. **Let's Encrypt Integration**: Creates both staging and production ClusterIssuers for certificate management
+5. **Automatic Certificate Provisioning**:
+   - Wildcard certificate for apps: `*.apps.<cluster-domain>`
+   - Dedicated certificate for API server: `api.<cluster-domain>`
+6. **Auto-Configuration**: Patches IngressController and APIServer to use the new certificates
+
+### Certificate Issuance Flow
+
+```
+1. Certificate resource created
+2. cert-manager triggers Let's Encrypt ACME challenge
+3. OCI DNS webhook creates TXT record in your DNS zone
+4. Let's Encrypt validates domain ownership via DNS
+5. Certificate issued and stored in Kubernetes Secret
+6. IngressController/APIServer automatically reload with new certificate
+```
+
+### Skipping Certificate Setup
+
+To skip TLS certificate setup and use default self-signed certificates:
+- Leave `dns_zone_name` empty when running the stack
+- The stack will only configure the image registry
 
 ## Obtaining the Kubeconfig
 
@@ -37,16 +70,6 @@ export KUBECONFIG=/path/to/auth/kubeconfig
 
 ## Usage
 
-## DNS Zone Requirements
-
-Provide your OCI DNS zone name for TLS certificate management:
-
-**Example:** 
-- Cluster domain: `test.oracle.maxiron.cloud`
-- DNS zone name to provide: `oracle.maxiron.cloud`
-- Wildcard cert issued for: `*.apps.test.oracle.maxiron.cloud`
-
-If DNS zone name is not provided (left empty), cert-manager setup is skipped (image registry still configured).
 
 ### **For ORM (Oracle Resource Manager):**
 
@@ -98,8 +121,6 @@ In ORM, you can customize the following settings:
 
 - **Image Registry Storage Size**: Default 100Gi, can be increased (e.g., 200Gi, 500Gi)
 - **Storage Class**: Default `oci-bv-immediate`, can use `oci-bv` for WaitForFirstConsumer
-- **DNS Compartment**: Leave empty to use cluster compartment, or specify if DNS zone is in different compartment
-- **Let's Encrypt Email**: Defaults to `cloud@maxiron.com`, can be changed if needed
 
 
 ## Variables
@@ -107,9 +128,8 @@ In ORM, you can customize the following settings:
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `kubeconfig_par_url` | PAR URL to fetch kubeconfig from Object Storage | - | Yes |
-| `compartment_ocid` | Compartment OCID where cluster exists | - | Yes |
-| `dns_compartment_ocid` | Compartment OCID where DNS zone exists | `""` (uses compartment_ocid) | No |
-| `dns_zone_name` | OCI DNS zone name (e.g., oracle.maxiron.cloud) | `""` (skips TLS setup) | No |
+| `compartment_ocid` | Compartment OCID where cluster and DNS zone exist | - | Yes |
+| `dns_zone_name` | OCI DNS zone name for TLS certificates | `""` (skips TLS) | No |
 | `letsencrypt_email` | Email for Let's Encrypt notifications | `cloud@maxiron.com` | No |
 | `image_registry_storage_size` | Size of PVC for image registry | `100Gi` | No |
 | `image_registry_storage_class` | StorageClass for image registry PVC | `oci-bv-immediate` | No |
@@ -122,10 +142,13 @@ In ORM, you can customize the following settings:
 | `image_registry_storage_class` | StorageClass used for the image registry |
 | `image_registry_storage_size` | Storage size allocated for the image registry |
 | `cluster_domain` | Auto-detected cluster base domain |
-| `apps_domain` | Apps domain for wildcard certificate |
-| `cert_manager_cluster_issuer` | ClusterIssuer name for Let's Encrypt |
-| `wildcard_certificate_secret` | Secret name containing the TLS certificate |
-| `dns_zone_ocid` | Auto-detected DNS zone OCID |
+| `apps_domain` | Apps domain for the cluster |
+| `staging_cluster_issuer` | Name of Let's Encrypt staging ClusterIssuer |
+| `production_cluster_issuer` | Name of Let's Encrypt production ClusterIssuer |
+| `apps_certificate_secret` | Secret containing apps wildcard certificate |
+| `api_certificate_secret` | Secret containing API server certificate |
+| `dns_zone_ocid` | OCI DNS zone OCID being used |
+| `dns_zone_name` | DNS zone name provided |
 
 ## What Gets Configured
 
@@ -151,45 +174,6 @@ podman login <registry-route>
 podman push <registry-route>/<project>/<image>:<tag>
 ```
 
-### TLS Certificate Management
-
-1. **cert-manager Installation**: 
-   - Deploys cert-manager v1.16.2 with all CRDs, controllers, and webhooks
-   - Creates `cert-manager` namespace
-   
-2. **OCI DNS Webhook**: 
-   - Installs cert-manager-webhook-oci for DNS-01 challenge validation
-   - Configured to use Instance Principal authentication (no credentials needed)
-   - Manages DNS records in your OCI DNS zone
-
-3. **ClusterIssuer**: 
-   - Creates `letsencrypt-prod` ClusterIssuer
-   - Configured for ACME protocol with Let's Encrypt production environment
-   - Uses DNS-01 challenge via OCI DNS webhook
-
-4. **Wildcard Certificate**: 
-   - Automatically requests a wildcard certificate for `*.apps.<cluster-domain>`
-   - Certificate is stored in `wildcard-tls-cert` secret in `openshift-ingress` namespace
-   - Auto-renewal configured 30 days before expiry
-
-5. **Ingress Configuration**: 
-   - Patches the default IngressController to use the wildcard certificate
-   - All routes automatically use the trusted Let's Encrypt certificate
-   - No more browser warnings!
-
-**How It Works:**
-
-```
-cert-manager → ClusterIssuer (Let's Encrypt) → Certificate Request → 
-DNS-01 Challenge → OCI DNS Webhook → Creates TXT record → 
-Let's Encrypt validates → Certificate issued → 
-Stored in Secret → IngressController uses certificate
-```
-
-**Auto-Detection:**
-- Cluster domain extracted from kubeconfig API server URL
-- DNS zone automatically found by matching domain name
-- No manual OCID lookups required!
 
 ## Verifying the Configuration
 
@@ -209,40 +193,134 @@ oc get pods -n openshift-image-registry
 oc get route -n openshift-image-registry
 ```
 
-### Check cert-manager and Certificates
+### Check cert-manager Operator
 
 ```bash
-# Check cert-manager pods
-kubectl get pods -n cert-manager
+# Check cert-manager operator installation
+oc get csv -n cert-manager-operator | grep cert-manager
 
-# Check ClusterIssuer status
-kubectl get clusterissuer letsencrypt-prod
-kubectl describe clusterissuer letsencrypt-prod
+# Check operator status
+oc get pods -n cert-manager-operator
 
-# Check Certificate status
-kubectl get certificate -n openshift-ingress
-kubectl describe certificate wildcard-tls -n openshift-ingress
-
-# Verify certificate details
-kubectl get secret wildcard-tls-cert -n openshift-ingress -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -text -noout
-
-# Check IngressController configuration
-oc get ingresscontroller default -n openshift-ingress-operator -o yaml
-
-# Test a route - should show valid Let's Encrypt certificate
-curl -v https://console-openshift-console.apps.<your-domain>
+# Verify cert-manager is running
+oc get pods -n cert-manager | grep cert-manager
 ```
 
-**Certificate Issuance Timeline:**
-- cert-manager deployment: ~2 minutes
-- DNS-01 challenge: ~2-3 minutes
-- Certificate issuance: ~1 minute
-- Total: ~5-6 minutes
+### Check OCI DNS Webhook
 
-**Expected States:**
-1. Certificate status: `Ready=True`
-2. ClusterIssuer status: `Ready=True`
+```bash
+# Check webhook deployment
+oc get deployment -n cert-manager-webhook-oci
+
+# Check webhook pods
+oc get pods -n cert-manager-webhook-oci
+
+# Check webhook logs
+oc logs -n cert-manager-webhook-oci -l app=cert-manager-webhook-oci
+```
+
+### Check ClusterIssuers
+
+```bash
+# List all ClusterIssuers
+oc get clusterissuer
+
+# Check staging issuer status
+oc describe clusterissuer letsencrypt-staging
+
+# Check production issuer status
+oc describe clusterissuer letsencrypt-prod
+```
+
+### Check Apps Wildcard Certificate
+
+```bash
+# Check certificate status
+oc get certificate -n openshift-ingress
+
+# Check detailed certificate information
+oc describe certificate apps-wildcard-cert -n openshift-ingress
+
+# Verify certificate is ready
+oc get certificate apps-wildcard-cert -n openshift-ingress -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
+
+# View certificate details
+oc get secret apps-wildcard-tls -n openshift-ingress -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -text -noout
+
+# Check IngressController configuration
+oc get ingresscontroller default -n openshift-ingress-operator -o yaml | grep -A 5 defaultCertificate
+```
+
+### Check API Server Certificate
+
+```bash
+# Check API certificate status
+oc get certificate -n openshift-config
+
+# Check detailed certificate information
+oc describe certificate api-server-cert -n openshift-config
+
+# Verify certificate is ready
+oc get certificate api-server-cert -n openshift-config -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
+
+# View certificate details
+oc get secret api-server-tls -n openshift-config -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -text -noout
+
+# Check APIServer configuration
+oc get apiserver cluster -o yaml | grep -A 10 namedCertificates
+```
+
+### Verify TLS in Browser
+
+```bash
+# Test apps wildcard certificate (should show Let's Encrypt)
+curl -v https://console-openshift-console.apps.<your-cluster-domain> 2>&1 | grep -E "(issuer|subject)"
+
+# Test API server certificate
+curl -v https://api.<your-cluster-domain>:6443 2>&1 | grep -E "(issuer|subject)"
+
+# Or open in browser:
+# https://console-openshift-console.apps.<your-cluster-domain>
+# Should show valid Let's Encrypt certificate with no warnings
+```
+
+### Certificate Issuance Timeline
+
+**Expected duration for certificate issuance:**
+- cert-manager operator deployment: ~2-3 minutes
+- OCI DNS webhook deployment: ~1 minute
+- DNS-01 challenge completion: ~2-3 minutes
+- Certificate issuance: ~1 minute
+- **Total: ~6-8 minutes**
+
+**Expected states after successful deployment:**
+1. ClusterIssuer status: `Ready=True`
+2. Certificate status: `Ready=True`
 3. Browser: Shows "Secure" with Let's Encrypt certificate
+4. No certificate warnings in OpenShift console
+
+### Troubleshooting Certificate Issues
+
+```bash
+# Check cert-manager logs
+oc logs -n cert-manager -l app=cert-manager
+
+# Check certificate order status
+oc get order -A
+
+# Check ACME challenges
+oc get challenge -A
+
+# View challenge details (if stuck)
+oc describe challenge -A
+
+# Check DNS TXT records created by webhook
+# Look for _acme-challenge.<domain> TXT records in OCI DNS console
+
+# Force certificate renewal (if needed)
+oc delete certificaterequest -n openshift-ingress --all
+```
+
 
 ## Module Structure
 

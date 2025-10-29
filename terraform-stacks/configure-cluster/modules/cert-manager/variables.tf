@@ -1,6 +1,11 @@
 variable "cluster_domain" {
   type        = string
-  description = "Cluster domain for wildcard certificate (e.g., apps.ocp.example.com)"
+  description = "Full apps domain for wildcard certificate (e.g., apps.ocp.example.com)"
+}
+
+variable "cluster_base_domain" {
+  type        = string
+  description = "Base cluster domain (e.g., ocp.example.com)"
 }
 
 variable "dns_zone_ocid" {
@@ -9,9 +14,9 @@ variable "dns_zone_ocid" {
   default     = ""
 }
 
-variable "dns_compartment_ocid" {
+variable "compartment_ocid" {
   type        = string
-  description = "Compartment OCID where DNS zone exists"
+  description = "Compartment OCID where DNS zone and cluster exist"
 }
 
 variable "letsencrypt_email" {
@@ -19,15 +24,8 @@ variable "letsencrypt_email" {
   description = "Email address for Let's Encrypt account registration and notifications"
 }
 
-variable "cert_manager_version" {
+variable "webhook_group_name" {
   type        = string
-  description = "cert-manager version to install"
-  default     = "v1.16.2"
+  description = "API group name for the OCI DNS webhook"
+  default     = "acme.oci.oraclecloud.com"
 }
-
-variable "oci_dns_webhook_version" {
-  type        = string
-  description = "cert-manager-webhook-oci version"
-  default     = "0.3.0"
-}
-

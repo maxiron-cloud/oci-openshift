@@ -27,14 +27,25 @@ output "apps_domain" {
   value       = local.apps_domain
 }
 
-output "cert_manager_cluster_issuer" {
-  description = "ClusterIssuer name for Let's Encrypt"
-  value       = module.cert_manager.cluster_issuer_name
+# Certificate management outputs
+output "staging_cluster_issuer" {
+  description = "Name of the Let's Encrypt staging ClusterIssuer"
+  value       = module.cert_manager.staging_cluster_issuer
 }
 
-output "wildcard_certificate_secret" {
-  description = "Secret name containing the wildcard TLS certificate"
-  value       = module.cert_manager.certificate_secret_name
+output "production_cluster_issuer" {
+  description = "Name of the Let's Encrypt production ClusterIssuer"
+  value       = module.cert_manager.production_cluster_issuer
+}
+
+output "apps_certificate_secret" {
+  description = "Secret name containing the apps wildcard TLS certificate"
+  value       = module.cert_manager.apps_certificate_secret
+}
+
+output "api_certificate_secret" {
+  description = "Secret name containing the API server TLS certificate"
+  value       = module.cert_manager.api_certificate_secret
 }
 
 output "dns_zone_ocid" {
@@ -46,4 +57,5 @@ output "dns_zone_name" {
   description = "DNS zone name provided"
   value       = var.dns_zone_name != "" ? var.dns_zone_name : "N/A - not provided"
 }
+
 

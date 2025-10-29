@@ -17,18 +17,12 @@ variable "image_registry_storage_class" {
 
 variable "compartment_ocid" {
   type        = string
-  description = "Compartment OCID where cluster resources exist (used for DNS zone lookup)"
-}
-
-variable "dns_compartment_ocid" {
-  type        = string
-  description = "Compartment OCID where DNS zone exists. Leave empty to use the same compartment as specified in compartment_ocid."
-  default     = ""
+  description = "Compartment OCID where cluster and DNS zone exist"
 }
 
 variable "dns_zone_name" {
   type        = string
-  description = "DNS zone name in OCI DNS (e.g., oracle.maxiron.cloud). Leave empty to skip TLS certificate setup."
+  description = "OCI DNS zone name for TLS certificates (e.g., oracle.maxiron.cloud). Leave empty to skip TLS certificate setup."
   default     = ""
 }
 

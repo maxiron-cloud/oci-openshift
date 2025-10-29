@@ -11,9 +11,6 @@ locals {
   cluster_base_domain = replace(replace(local.cluster_api_url, "https://api.", ""), ":6443", "")
   # Apps domain for wildcard certificate
   apps_domain = "apps.${local.cluster_base_domain}"
-  
-  # DNS compartment (use provided or default to cluster compartment)
-  dns_compartment = var.dns_compartment_ocid != "" ? var.dns_compartment_ocid : var.compartment_ocid
 }
 
 # OCI provider for DNS zone lookup
@@ -38,10 +35,11 @@ provider "kubectl" {
   load_config_file       = false
 }
 
+
 # Lookup DNS zone OCID from provided zone name
 data "oci_dns_zones" "cluster_zone" {
   count          = var.dns_zone_name != "" ? 1 : 0
-  compartment_id = local.dns_compartment
+  compartment_id = var.compartment_ocid
   name           = var.dns_zone_name
   scope          = "GLOBAL"
 }
@@ -60,10 +58,11 @@ module "image_registry" {
 module "cert_manager" {
   source = "./modules/cert-manager"
 
-  cluster_domain        = local.apps_domain
-  dns_zone_ocid        = local.dns_zone_id
-  dns_compartment_ocid = local.dns_compartment
-  letsencrypt_email    = var.letsencrypt_email
+  cluster_domain      = local.apps_domain
+  cluster_base_domain = local.cluster_base_domain
+  dns_zone_ocid       = local.dns_zone_id
+  compartment_ocid    = var.compartment_ocid
+  letsencrypt_email   = var.letsencrypt_email
 
   depends_on = [module.image_registry]
 }
