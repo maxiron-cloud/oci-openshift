@@ -79,13 +79,21 @@ resource "kubectl_manifest" "cert_manager_subscription" {
 }
 
 # Wait for cert-manager operator to deploy cert-manager
+# The OpenShift operator needs significant time to:
+# 1. Deploy the cert-manager operator (creates operator pod in cert-manager-operator namespace)
+# 2. Operator creates cert-manager namespace
+# 3. Operator installs cert-manager pods (cert-manager, cert-manager-webhook, cert-manager-cainjector)
+# 4. Operator installs CRDs (Certificate, Issuer, ClusterIssuer, etc.)
+# 5. cert-manager webhook service must be FULLY READY before creating any Issuer resources
+# 6. cert-manager-webhook pod must be running and its service must be responding
+# Using 10 minutes to ensure cert-manager is fully operational in ORM environment
 resource "time_sleep" "wait_for_cert_manager_operator" {
   count           = local.enable_tls ? 1 : 0
-  create_duration = "5m"
+  create_duration = "10m"
 
   depends_on = [
     kubectl_manifest.cert_manager_subscription,
-    kubernetes_namespace_v1.cert_manager_operator
+    kubectl_manifest.cert_manager_operator_group
   ]
 }
 
@@ -117,6 +125,50 @@ resource "kubernetes_service_account_v1" "oci_webhook" {
   }
 }
 
+# Grant the OCI webhook service account permission to use hostnetwork SCC
+# This is REQUIRED for Instance Principal authentication to access the metadata service at 169.254.169.254
+resource "kubectl_manifest" "oci_webhook_scc" {
+  count = local.enable_tls ? 1 : 0
+
+  yaml_body = <<-YAML
+    apiVersion: security.openshift.io/v1
+    kind: SecurityContextConstraints
+    metadata:
+      name: cert-manager-webhook-oci-hostnetwork
+    allowHostDirVolumePlugin: false
+    allowHostIPC: false
+    allowHostNetwork: true
+    allowHostPID: false
+    allowHostPorts: true
+    allowPrivilegeEscalation: false
+    allowPrivilegedContainer: false
+    allowedCapabilities: null
+    defaultAddCapabilities: null
+    fsGroup:
+      type: MustRunAs
+    readOnlyRootFilesystem: false
+    requiredDropCapabilities:
+      - ALL
+    runAsUser:
+      type: MustRunAsRange
+    seLinuxContext:
+      type: MustRunAs
+    supplementalGroups:
+      type: RunAsAny
+    users:
+      - system:serviceaccount:${kubernetes_namespace_v1.oci_webhook[0].metadata[0].name}:cert-manager-webhook-oci
+    volumes:
+      - configMap
+      - downwardAPI
+      - emptyDir
+      - persistentVolumeClaim
+      - projected
+      - secret
+  YAML
+
+  depends_on = [kubernetes_service_account_v1.oci_webhook]
+}
+
 # Create ClusterRole for OCI DNS webhook
 resource "kubectl_manifest" "oci_webhook_clusterrole" {
   count = local.enable_tls ? 1 : 0
@@ -143,6 +195,12 @@ resource "kubectl_manifest" "oci_webhook_clusterrole" {
         verbs:
           - "list"
           - "watch"
+      - apiGroups:
+          - "authorization.k8s.io"
+        resources:
+          - "subjectaccessreviews"
+        verbs:
+          - "create"
   YAML
 
   depends_on = [kubernetes_namespace_v1.oci_webhook]
@@ -168,6 +226,50 @@ resource "kubectl_manifest" "oci_webhook_clusterrolebinding" {
   YAML
 
   depends_on = [kubectl_manifest.oci_webhook_clusterrole]
+}
+
+# Create ClusterRole for cert-manager to use OCI webhook
+# This allows cert-manager to create the OCI webhook custom resources for DNS-01 challenges
+resource "kubectl_manifest" "cert_manager_oci_webhook_role" {
+  count = local.enable_tls ? 1 : 0
+
+  yaml_body = <<-YAML
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: cert-manager:webhook:oci
+    rules:
+      - apiGroups:
+          - "acme.oci.oraclecloud.com"
+        resources:
+          - "oci"
+        verbs:
+          - "create"
+  YAML
+
+  depends_on = [time_sleep.wait_for_cert_manager_operator]
+}
+
+# Create ClusterRoleBinding to grant cert-manager permission to use OCI webhook
+resource "kubectl_manifest" "cert_manager_oci_webhook_rolebinding" {
+  count = local.enable_tls ? 1 : 0
+
+  yaml_body = <<-YAML
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: cert-manager:webhook:oci
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: cert-manager:webhook:oci
+    subjects:
+      - kind: ServiceAccount
+        name: cert-manager
+        namespace: cert-manager
+  YAML
+
+  depends_on = [kubectl_manifest.cert_manager_oci_webhook_role]
 }
 
 # Create Deployment for OCI DNS webhook
@@ -200,6 +302,10 @@ resource "kubernetes_deployment_v1" "oci_webhook" {
 
       spec {
         service_account_name = kubernetes_service_account_v1.oci_webhook[0].metadata[0].name
+        # CRITICAL: hostNetwork required for Instance Principal to access OCI metadata service (169.254.169.254)
+        host_network = true
+        # Use control plane DNS to avoid conflicts with host network
+        dns_policy = "ClusterFirstWithHostNet"
 
         container {
           name  = "webhook"
@@ -317,7 +423,11 @@ resource "kubectl_manifest" "oci_webhook_issuer" {
       selfSigned: {}
   YAML
 
-  depends_on = [time_sleep.wait_for_cert_manager_operator]
+  depends_on = [
+    time_sleep.wait_for_cert_manager_operator,
+    kubernetes_namespace_v1.oci_webhook,
+    kubernetes_service_account_v1.oci_webhook
+  ]
 }
 
 # Create Certificate for webhook TLS
