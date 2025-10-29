@@ -25,26 +25,7 @@ locals {
 # A. Install cert-manager via OpenShift Operator
 # ============================================================================
 
-# Subscribe to cert-manager operator from Red Hat operators catalog
-resource "kubectl_manifest" "cert_manager_subscription" {
-  count = local.enable_tls ? 1 : 0
-
-  yaml_body = <<-YAML
-    apiVersion: operators.coreos.com/v1alpha1
-    kind: Subscription
-    metadata:
-      name: openshift-cert-manager-operator
-      namespace: cert-manager-operator
-    spec:
-      channel: stable-v1
-      name: openshift-cert-manager-operator
-      source: redhat-operators
-      sourceNamespace: openshift-marketplace
-      installPlanApproval: Automatic
-  YAML
-}
-
-# Create namespace for cert-manager operator
+# Step 1: Create namespace for cert-manager operator
 resource "kubernetes_namespace_v1" "cert_manager_operator" {
   count = local.enable_tls ? 1 : 0
 
@@ -57,16 +38,55 @@ resource "kubernetes_namespace_v1" "cert_manager_operator" {
   }
 }
 
-# Wait for cert-manager operator to be deployed and CRDs to be available
-# The operator needs time to:
-# 1. Install cert-manager pods (cert-manager, cert-manager-webhook, cert-manager-cainjector)
-# 2. Install CRDs (Certificate, Issuer, ClusterIssuer, etc.)
-# 3. Start the webhook service
+# Step 2: Create OperatorGroup - tells OLM which namespaces the operator watches
+resource "kubectl_manifest" "cert_manager_operator_group" {
+  count = local.enable_tls ? 1 : 0
+
+  yaml_body = <<-YAML
+    apiVersion: operators.coreos.com/v1
+    kind: OperatorGroup
+    metadata:
+      name: cert-manager-operator
+      namespace: cert-manager-operator
+    spec:
+      targetNamespaces:
+        - cert-manager-operator
+  YAML
+
+  depends_on = [kubernetes_namespace_v1.cert_manager_operator]
+}
+
+# Step 3: Subscribe to cert-manager operator from Red Hat operators catalog
+resource "kubectl_manifest" "cert_manager_subscription" {
+  count = local.enable_tls ? 1 : 0
+
+  yaml_body = <<-YAML
+    apiVersion: operators.coreos.com/v1alpha1
+    kind: Subscription
+    metadata:
+      name: openshift-cert-manager-operator
+      namespace: cert-manager-operator
+    spec:
+      channel: stable-v1
+      installPlanApproval: Automatic
+      name: openshift-cert-manager-operator
+      source: redhat-operators
+      sourceNamespace: openshift-marketplace
+      startingCSV: cert-manager-operator.v1.17.0
+  YAML
+
+  depends_on = [kubectl_manifest.cert_manager_operator_group]
+}
+
+# Wait for cert-manager operator to deploy cert-manager
 resource "time_sleep" "wait_for_cert_manager_operator" {
   count           = local.enable_tls ? 1 : 0
   create_duration = "5m"
 
-  depends_on = [kubectl_manifest.cert_manager_subscription]
+  depends_on = [
+    kubectl_manifest.cert_manager_subscription,
+    kubernetes_namespace_v1.cert_manager_operator
+  ]
 }
 
 # ============================================================================
