@@ -420,18 +420,6 @@ resource "kubectl_manifest" "letsencrypt_prod_issuer" {
 # E. Create wildcard certificate for apps ingress
 # ============================================================================
 
-# Create openshift-ingress namespace if it doesn't exist
-resource "kubernetes_namespace_v1" "openshift_ingress" {
-  count = local.enable_tls ? 1 : 0
-
-  metadata {
-    name = "openshift-ingress"
-  }
-
-  lifecycle {
-    ignore_changes = [metadata]
-  }
-}
 
 # Request wildcard certificate for apps ingress
 resource "kubectl_manifest" "apps_wildcard_cert" {
@@ -456,8 +444,7 @@ resource "kubectl_manifest" "apps_wildcard_cert" {
   YAML
 
   depends_on = [
-    kubectl_manifest.letsencrypt_prod_issuer,
-    kubernetes_namespace_v1.openshift_ingress
+    kubectl_manifest.letsencrypt_prod_issuer
   ]
 }
 
@@ -495,18 +482,6 @@ resource "kubectl_manifest" "ingress_default_cert" {
 # G. Create certificate for API server
 # ============================================================================
 
-# Create openshift-config namespace if it doesn't exist
-resource "kubernetes_namespace_v1" "openshift_config" {
-  count = local.enable_tls ? 1 : 0
-
-  metadata {
-    name = "openshift-config"
-  }
-
-  lifecycle {
-    ignore_changes = [metadata]
-  }
-}
 
 # Request certificate for API server
 resource "kubectl_manifest" "api_server_cert" {
@@ -531,8 +506,7 @@ resource "kubectl_manifest" "api_server_cert" {
   YAML
 
   depends_on = [
-    kubectl_manifest.letsencrypt_prod_issuer,
-    kubernetes_namespace_v1.openshift_config
+    kubectl_manifest.letsencrypt_prod_issuer
   ]
 }
 
