@@ -248,7 +248,10 @@ resource "kubernetes_deployment_v1" "oci_webhook" {
     }
   }
 
-  depends_on = [kubernetes_service_account_v1.oci_webhook]
+  depends_on = [
+    kubernetes_service_account_v1.oci_webhook,
+    time_sleep.wait_for_webhook_cert
+  ]
 }
 
 # Create Service for OCI DNS webhook
@@ -315,6 +318,14 @@ resource "kubectl_manifest" "oci_webhook_cert" {
   YAML
 
   depends_on = [kubectl_manifest.oci_webhook_issuer]
+}
+
+# Wait for webhook certificate to be issued and secret created
+resource "time_sleep" "wait_for_webhook_cert" {
+  count           = local.enable_tls ? 1 : 0
+  create_duration = "60s"
+
+  depends_on = [kubectl_manifest.oci_webhook_cert]
 }
 
 # Create APIService for webhook
