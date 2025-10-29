@@ -57,10 +57,14 @@ resource "kubernetes_namespace_v1" "cert_manager_operator" {
   }
 }
 
-# Wait for cert-manager operator to be deployed
+# Wait for cert-manager operator to be deployed and CRDs to be available
+# The operator needs time to:
+# 1. Install cert-manager pods (cert-manager, cert-manager-webhook, cert-manager-cainjector)
+# 2. Install CRDs (Certificate, Issuer, ClusterIssuer, etc.)
+# 3. Start the webhook service
 resource "time_sleep" "wait_for_cert_manager_operator" {
   count           = local.enable_tls ? 1 : 0
-  create_duration = "120s"
+  create_duration = "5m"
 
   depends_on = [kubectl_manifest.cert_manager_subscription]
 }
