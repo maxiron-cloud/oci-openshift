@@ -268,3 +268,165 @@ spec:
         persistentVolumeClaim:
           claimName: oci-bv-pvc-rwx
 ```
+
+---
+
+## File Storage Service (FSS) - Static Provisioning
+
+### Overview
+
+The OCI CSI driver supports [Oracle Cloud Infrastructure File Storage Service (FSS)](https://docs.oracle.com/en-us/iaas/Content/File/Concepts/filestorageoverview.htm), which provides NFS-based shared storage for applications requiring `ReadWriteMany` access mode.
+
+**Important:** Starting from the latest version, FSS resources are **statically provisioned** by Terraform rather than dynamically created by Kubernetes. This provides:
+
+- **Clean destroy operations**: All FSS resources are tracked in Terraform state and automatically cleaned up when destroying the cluster
+- **Predictable resource lifecycle**: No orphaned mount targets or file systems
+- **Better cost visibility**: Resources are visible in Terraform plan/state
+- **Consistent naming and tagging**: All resources follow the cluster naming convention
+
+### Architecture
+
+When `enable_fss_storage_class = true` in the create-cluster stack:
+
+1. **Terraform creates**:
+   - File System with cluster-specific naming
+   - Mount Target in the `private_ocp` subnet with the cluster compute NSG
+   - Export at path `/openshift` with proper permissions
+
+2. **StorageClass references** the pre-created mount target:
+   - Name: `oci-fss`
+   - Uses `mountTargetOcid` and `exportPath` parameters
+   - `reclaimPolicy: Retain` (safer - PVs are retained when PVCs are deleted)
+
+### Enabling FSS Storage
+
+Set the following variable in your `create-cluster` Terraform configuration:
+
+```hcl
+enable_fss_storage_class = true
+```
+
+This will:
+- Create FSS infrastructure (file system, mount target, export)
+- Deploy the `oci-fss` StorageClass to your cluster
+- Make NFS-based shared storage available for applications
+
+### StorageClass Configuration
+
+```yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: oci-fss
+provisioner: fss.csi.oraclecloud.com
+parameters:
+  mountTargetOcid: "<pre-created-mount-target-ocid>"
+  exportPath: "/openshift"
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: Immediate
+mountOptions:
+  - nfsvers=3
+  - hard
+  - timeo=600
+  - retrans=2
+```
+
+### Usage Example
+
+**PersistentVolumeClaim**:
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-fss-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: oci-fss
+```
+
+**Deployment** (multiple pods sharing the same volume):
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: app
+        image: nginx
+        volumeMounts:
+        - name: shared-data
+          mountPath: /usr/share/nginx/html
+      volumes:
+      - name: shared-data
+        persistentVolumeClaim:
+          claimName: my-fss-pvc
+```
+
+### Destroy Operations
+
+When destroying the cluster:
+
+1. **Delete PVCs first** (optional, but recommended):
+   ```bash
+   oc delete pvc my-fss-pvc
+   ```
+
+2. **Destroy the cluster**:
+   - Terraform will automatically clean up: exports → mount target → file system
+   - No manual cleanup of FSS resources required
+
+### FSS vs Block Volume
+
+| Feature | FSS (NFS) | Block Volume (iSCSI/Paravirtualized) |
+|---------|-----------|--------------------------------------|
+| **Access Mode** | ReadWriteMany | ReadWriteOnce, ReadOnlyMany (block mode), ReadWriteMany (block mode) |
+| **Protocol** | NFS v3 | iSCSI or Paravirtualized |
+| **Use Case** | Shared storage across multiple pods | Single-pod persistent storage |
+| **Performance** | Good for shared files | Excellent for databases and high IOPS workloads |
+| **Provisioning** | Static (pre-created by Terraform) | Dynamic (created on-demand) |
+| **Cost** | Pay for allocated capacity | Pay for allocated capacity |
+
+### Considerations
+
+- **Network dependency**: FSS requires network connectivity between pods and the mount target
+- **Performance**: FSS is optimized for shared file access, not high-IOPS workloads
+- **Capacity planning**: Consider file system growth when sizing initial deployment
+- **Encryption**: Encryption in transit can be enabled via the `enable_fss_encrypt_in_transit` variable
+- **Reclaim policy**: Set to `Retain` to prevent accidental data loss when PVCs are deleted
+
+### Troubleshooting
+
+**PVC stuck in Pending**:
+```bash
+# Check PVC status
+oc describe pvc my-fss-pvc
+
+# Check CSI node driver logs
+oc logs -n oci-csi daemonset/csi-oci-node -c oci-csi-node-driver
+
+# Verify mount target is accessible from worker nodes
+oc debug node/<node-name>
+# Then from debug pod:
+chroot /host
+ping <mount-target-ip>
+```
+
+**Mount failures**:
+- Verify NSG rules allow NFS traffic (TCP/UDP ports 111, 2048-2050)
+- Check export options match your subnet CIDR
+- Ensure nodes can resolve the mount target hostname

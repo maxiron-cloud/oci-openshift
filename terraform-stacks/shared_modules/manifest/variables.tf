@@ -106,26 +106,20 @@ variable "enable_fss_storage_class" {
   default     = false
 }
 
-variable "fss_availability_domain" {
+variable "fss_mount_target_id" {
   type        = string
-  description = "Availability Domain for FSS (e.g., UK-LONDON-1-AD-1)"
-  default     = "UK-LONDON-1-AD-1"
-}
-
-variable "fss_compartment_ocid" {
-  type        = string
-  description = "Compartment OCID where FSS resources will be created (automatically set to cluster compartment)"
+  description = "Pre-created FSS mount target OCID (from static FSS module)"
   default     = ""
 }
 
-variable "fss_mount_target_subnet_ocid" {
+variable "fss_export_path" {
   type        = string
-  description = "Subnet OCID for FSS mount target"
+  description = "FSS export path (from static FSS module, e.g., /openshift)"
   default     = ""
 }
 
-variable "fss_encrypt_in_transit" {
+variable "fss_mount_target_ip" {
   type        = string
-  description = "Enable encryption in transit for FSS"
-  default     = "false"
+  description = "FSS mount target IP address (from static FSS module)"
+  default     = ""
 }
