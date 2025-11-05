@@ -258,28 +258,6 @@ module "ocir" {
   region           = local.current_region_key
 }
 
-# ============================================================================
-# FSS (File Storage Service) Module
-# ============================================================================
-# Creates static FSS resources (file system, mount target, export) for
-# OpenShift persistent storage. Resources are managed by Terraform for
-# clean destroy operations.
-# ============================================================================
-module "fss" {
-  count  = var.enable_fss_storage_class ? 1 : 0
-  source = "../shared_modules/fss"
-
-  compartment_ocid     = var.compartment_ocid
-  availability_domain  = module.meta.ad_name
-  subnet_ocid          = module.network.op_subnet_private_ocp
-  nsg_ocid             = module.network.op_network_security_group_cluster_compute_nsg
-  display_name_prefix  = local.cluster_name
-  encrypt_in_transit   = var.fss_encrypt_in_transit == "true"
-  defined_tags         = local.resource_tags
-
-  depends_on = [module.network]
-}
-
 module "manifests" {
   source = "../shared_modules/manifest"
 
@@ -312,11 +290,12 @@ module "manifests" {
   use_oracle_cloud_agent = var.use_oracle_cloud_agent
   oca_image_pull_link    = module.ocir.image_pull_command
 
-  // FSS configuration (static provisioning)
-  enable_fss_storage_class = var.enable_fss_storage_class
-  fss_mount_target_id      = var.enable_fss_storage_class ? module.fss[0].mount_target_id : ""
-  fss_export_path          = var.enable_fss_storage_class ? module.fss[0].export_path : ""
-  fss_mount_target_ip      = var.enable_fss_storage_class ? module.fss[0].mount_target_ip : ""
+  // FSS configuration
+  enable_fss_storage_class     = var.enable_fss_storage_class
+  fss_availability_domain      = module.meta.ad_name
+  fss_compartment_ocid         = var.compartment_ocid
+  fss_mount_target_subnet_ocid = module.network.op_subnet_private_ocp
+  fss_encrypt_in_transit       = var.fss_encrypt_in_transit
 }
 
 module "resource_attribution_tags" {
