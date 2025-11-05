@@ -577,31 +577,17 @@ reclaimPolicy: Delete
 
 %{~ if enable_fss_storage_class ~}
 # oci-csi-13-storage-class-fss.yaml
+# Static FSS Storage Class (uses pre-created mount target)
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: oci-dyn-fss
+  name: oci-fss
 provisioner: fss.csi.oraclecloud.com
 parameters:
-  availabilityDomain: "${fss_availability_domain}"
-%{ if fss_compartment_ocid != "" ~}
-  compartmentOcid: "${fss_compartment_ocid}"
-%{ endif ~}
-%{ if fss_mount_target_subnet_ocid != "" ~}
-  mountTargetSubnetOcid: "${fss_mount_target_subnet_ocid}"
-%{ endif ~}
-  exportOptions: |
-    [
-      {
-        "source": "10.0.0.0/16",
-        "access": "READ_WRITE",
-        "identitySquash": "NONE",
-        "requirePrivilegedSourcePort": false
-      }
-    ]
-  encryptInTransit: "${fss_encrypt_in_transit}"
-  oci.oraclecloud.com/initial-defined-tags-override: '{"openshift-tags": {"openshift-resource": "openshift-virtualization"}}'
-reclaimPolicy: Delete
+  # Static mount target configuration
+  mountTargetOcid: "${fss_mount_target_id}"
+  exportPath: "${fss_export_path}"
+reclaimPolicy: Retain  # Retain PVs when PVCs are deleted (safer for data)
 allowVolumeExpansion: true
 volumeBindingMode: Immediate
 mountOptions:
