@@ -43,11 +43,6 @@ output "apps_certificate_secret" {
   value       = module.cert_manager.apps_certificate_secret
 }
 
-output "api_certificate_secret" {
-  description = "Secret name containing the API server TLS certificate"
-  value       = module.cert_manager.api_certificate_secret
-}
-
 output "dns_zone_ocid" {
   description = "DNS zone OCID being used"
   value       = local.dns_zone_id != "" ? local.dns_zone_id : "N/A - dns_zone_name not provided"

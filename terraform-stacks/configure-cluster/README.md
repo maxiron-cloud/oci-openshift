@@ -5,7 +5,7 @@ This Terraform stack provides post-installation configuration for OpenShift clus
 ## Features
 
 - **Image Registry Configuration**: Configures the internal OpenShift image registry with persistent storage and exposes the default route for external access
-- **Automated TLS Certificate Management**: Installs cert-manager via OpenShift Operator, deploys OCI DNS webhook, and provisions Let's Encrypt certificates for both apps ingress and API server
+- **Automated TLS Certificate Management**: Installs cert-manager via OpenShift Operator, deploys OCI DNS webhook, and provisions Let's Encrypt certificates for apps ingress (console and applications)
 - **DNS-01 Challenge Support**: Enables wildcard certificates using OCI DNS with Instance Principal authentication
 - **Extensible Design**: Modular structure allows easy addition of more post-installation configurations
 
@@ -25,28 +25,52 @@ This stack provides **fully automated TLS certificate management** using:
 ### How It Works
 
 1. **cert-manager Installation**: Deploys cert-manager via Red Hat OpenShift Operator from the certified operator catalog
-2. **OCI DNS Webhook**: Installs [giovannicandido/cert-manager-webhook-oci](https://github.com/giovannicandido/cert-manager-webhook-oci) for DNS-01 challenge validation
-3. **Instance Principal Authentication**: No credentials needed - uses the existing dynamic group IAM policy for control plane nodes
+2. **OCI DNS Webhook**: Installs [giovannicandido/cert-manager-webhook-oci](https://github.com/giovannicandido/cert-manager-webhook-oci) for DNS-01 challenge validation with `hostNetwork: true` for Instance Principal access
+3. **Instance Principal Authentication**: No credentials needed - uses the existing dynamic group IAM policy for control plane nodes to access OCI DNS
 4. **Let's Encrypt Integration**: Creates both staging and production ClusterIssuers for certificate management
 5. **Automatic Certificate Provisioning**:
-   - Wildcard certificate for apps: `*.apps.<cluster-domain>`
-   - Dedicated certificate for API server: `api.<cluster-domain>`
-6. **Auto-Configuration**: Patches IngressController and APIServer to use the new certificates
+   - Wildcard certificate for apps: `*.apps.<cluster-domain>` (covers console and all applications)
+6. **Auto-Configuration**: Patches IngressController to use the wildcard certificate
+7. **⚠️ API Server Certificate**: Intentionally NOT changed - keeps self-signed certificate from installation to preserve kubeconfig connectivity
 
 ### Certificate Issuance Flow
 
 ```
-1. Certificate resource created
+1. Certificate resource created for *.apps.<cluster-domain>
 2. cert-manager triggers Let's Encrypt ACME challenge
-3. OCI DNS webhook creates TXT record in your DNS zone
+3. OCI DNS webhook creates TXT record in your DNS zone  
 4. Let's Encrypt validates domain ownership via DNS
 5. Certificate issued and stored in Kubernetes Secret
-6. IngressController/APIServer automatically reload with new certificate
+6. IngressController automatically reloads with new certificate
+7. Console and all apps now use valid Let's Encrypt certificate
 ```
+
+### ⚠️ Important: API Server Certificate
+
+**The API server certificate is intentionally NOT changed by this stack.**
+
+#### Why?
+The kubeconfig file from cluster installation contains the original self-signed CA certificate. If we change the API server certificate to use Let's Encrypt:
+- ✅ The certificate becomes valid for browsers
+- ❌ **But the kubeconfig becomes invalid** (CA mismatch)
+- ❌ All `oc` and `kubectl` commands fail
+- ❌ Terraform can't destroy the cluster
+- ❌ Day 2 operations become impossible
+
+#### What Gets Secured?
+- ✅ **Console**: `https://console-openshift-console.apps.<cluster-domain>` → Valid Let's Encrypt cert
+- ✅ **All Apps**: `https://*.apps.<cluster-domain>` → Valid Let's Encrypt cert
+- ⚠️ **API Server**: `https://api.<cluster-domain>:6443` → Self-signed cert (only accessed by CLI tools, not browsers)
+
+This is the **correct approach for OCI OpenShift clusters** because:
+1. Users access the console via browser (gets valid cert) ✅
+2. Applications use the apps domain (get valid certs) ✅
+3. CLI tools use the API server (work with the original kubeconfig) ✅
+4. Infrastructure operations remain functional ✅
 
 ### Skipping Certificate Setup
 
-To skip TLS certificate setup and use default self-signed certificates:
+To skip TLS certificate setup entirely and use default self-signed certificates everywhere:
 - Leave `dns_zone_name` empty when running the stack
 - The stack will only configure the image registry
 
@@ -146,7 +170,6 @@ In ORM, you can customize the following settings:
 | `staging_cluster_issuer` | Name of Let's Encrypt staging ClusterIssuer |
 | `production_cluster_issuer` | Name of Let's Encrypt production ClusterIssuer |
 | `apps_certificate_secret` | Secret containing apps wildcard certificate |
-| `api_certificate_secret` | Secret containing API server certificate |
 | `dns_zone_ocid` | OCI DNS zone OCID being used |
 | `dns_zone_name` | DNS zone name provided |
 
