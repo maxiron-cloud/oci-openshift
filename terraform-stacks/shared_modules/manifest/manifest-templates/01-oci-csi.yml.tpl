@@ -587,7 +587,7 @@ parameters:
   # Static mount target configuration
   mountTargetOcid: "${fss_mount_target_id}"
   exportPath: "${fss_export_path}"
-reclaimPolicy: Retain  # Retain PVs when PVCs are deleted (safer for data)
+reclaimPolicy: Delete
 allowVolumeExpansion: true
 volumeBindingMode: Immediate
 mountOptions:

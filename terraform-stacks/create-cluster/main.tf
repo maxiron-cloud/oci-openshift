@@ -273,9 +273,9 @@ module "fss" {
   availability_domain  = module.meta.ad_name
   subnet_ocid          = module.network.op_subnet_private_ocp
   nsg_ocid             = module.network.op_network_security_group_cluster_compute_nsg
-  display_name_prefix  = local.cluster_name
+  display_name_prefix  = var.cluster_name
   encrypt_in_transit   = var.fss_encrypt_in_transit == "true"
-  defined_tags         = local.resource_tags
+  defined_tags         = module.resource_attribution_tags.openshift_resource_attribution_tag
 
   depends_on = [module.network]
 }

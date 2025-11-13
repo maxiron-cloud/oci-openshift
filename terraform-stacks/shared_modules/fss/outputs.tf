@@ -24,7 +24,7 @@ output "export_path" {
 
 output "mount_target_ip" {
   description = "Private IP address of the mount target for NFS mounts"
-  value       = oci_file_storage_mount_target.cluster_mount_target.private_ip_ids[0]
+  value       = length(oci_file_storage_mount_target.cluster_mount_target.private_ip_ids) > 0 ? data.oci_core_vnic.mount_target_vnic[0].private_ip_address : ""
 }
 
 output "mount_target_hostname" {

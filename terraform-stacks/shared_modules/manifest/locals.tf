@@ -12,10 +12,8 @@ locals {
     oci_driver_version          = var.oci_driver_version
     oci_image_source            = lookup(local.oci_image_sources, var.oci_driver_version, local.default_oci_driver_image)
     enable_fss_storage_class    = var.enable_fss_storage_class
-    fss_availability_domain     = var.fss_availability_domain
-    fss_compartment_ocid        = var.fss_compartment_ocid
-    fss_mount_target_subnet_ocid = var.fss_mount_target_subnet_ocid
-    fss_encrypt_in_transit      = var.fss_encrypt_in_transit
+    fss_mount_target_id         = var.fss_mount_target_id
+    fss_export_path             = var.fss_export_path
   })
 
   common_config = <<-COMMONCONFIG
