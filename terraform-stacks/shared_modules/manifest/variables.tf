@@ -117,9 +117,3 @@ variable "fss_export_path" {
   description = "FSS export path (from static FSS module, e.g., /openshift)"
   default     = ""
 }
-
-variable "fss_mount_target_ip" {
-  type        = string
-  description = "FSS mount target IP address (from static FSS module)"
-  default     = ""
-}

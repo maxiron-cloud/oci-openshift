@@ -316,7 +316,6 @@ module "manifests" {
   enable_fss_storage_class = var.enable_fss_storage_class
   fss_mount_target_id      = var.enable_fss_storage_class ? module.fss[0].mount_target_id : ""
   fss_export_path          = var.enable_fss_storage_class ? module.fss[0].export_path : ""
-  fss_mount_target_ip      = var.enable_fss_storage_class ? module.fss[0].mount_target_ip : ""
 }
 
 module "resource_attribution_tags" {

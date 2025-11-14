@@ -79,15 +79,3 @@ resource "oci_file_storage_export" "cluster_export" {
   }
 }
 
-# ============================================================================
-# Data Source: Get VNIC IP Address
-# ============================================================================
-# Mount target's private_ip_ids contains VNIC OCIDs, not IP addresses.
-# We need to look up the VNIC to get the actual IP address.
-# ============================================================================
-
-data "oci_core_vnic" "mount_target_vnic" {
-  count = length(oci_file_storage_mount_target.cluster_mount_target.private_ip_ids) > 0 ? 1 : 0
-  vnic_id = oci_file_storage_mount_target.cluster_mount_target.private_ip_ids[0]
-}
-
