@@ -1,0 +1,70 @@
+# 02-machineconfig-node-labels.yml
+# Automatically labels nodes with OCI availability domain for CSI topology support
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: master
+  name: 00-master-oci-node-labels
+spec:
+  config:
+    ignition:
+      version: 3.4.0
+    storage:
+      files:
+        - contents:
+            source: data:text/plain;charset=utf-8;base64,IyEvdXNyL2Jpbi9iYXNoCnNldCAtZXVvIHBpcGVmYWlsCgojIEZldGNoIGF2YWlsYWJpbGl0eSBkb21haW4gZnJvbSBPQ0kgbWV0YWRhdGEKQVZBSUxBQklMSVRZX0RPTUFJTj0kKGN1cmwgLUggIkF1dGhvcml6YXRpb246IEJlYXJlciBPcmFjbGUiIC1MIGh0dHA6Ly8xNjkuMjU0LjE2OS4yNTQvb3BjL3YyL2luc3RhbmNlLyAtLXJldHJ5IDEwIHwganEgLXIgJy5hdmFpbGFiaWxpdHlEb21haW4nKQoKaWYgWyAteiAiJEFWQUlMQUJJTElUWV9ET01BSU4iIF07IHRoZW4KICBlY2hvICJGYWlsZWQgdG8gZmV0Y2ggYXZhaWxhYmlsaXR5IGRvbWFpbiIKICBleGl0IDEKZmkKCiMgV2FpdCBmb3Igbm9kZSB0byBiZSByZWdpc3RlcmVkCk5PREVfTkFNRT0kKGhvc3RuYW1lKQp3aGlsZSAhIG9jIGdldCBub2RlICIkTk9ERV9OQU1FIiAmPi9kZXYvbnVsbDsgZG8KICBlY2hvICJXYWl0aW5nIGZvciBub2RlICROT0RFX05BTUUgdG8gYmUgcmVnaXN0ZXJlZC4uLiIKICBzbGVlcCA1CmRvbmUKCiMgTGFiZWwgdGhlIG5vZGUgd2l0aCB0b3BvbG9neSBrZXlzCmVjaG8gIkxhYmVsaW5nIG5vZGUgJE5PREVfTkFNRSB3aXRoIHpvbmU6ICRBVkFJTEFCSUxJVFlfRE9NQUlOIgpvYyBsYWJlbCBub2RlICIkTk9ERV9OQU1FIiB0b3BvbG9neS5rdWJlcm5ldGVzLmlvL3pvbmU9IiRBVkFJTEFCSUxJVFlfRE9NQUlOIiAtLW92ZXJ3cml0ZQpvYyBsYWJlbCBub2RlICIkTk9ERV9OQU1FIiBmYWlsdXJlLWRvbWFpbi5iZXRhLmt1YmVybmV0ZXMuaW8vem9uZT0iJEFWQUlMQUJJTElUWV9ET01BSU4iIC0tb3ZlcndyaXRlCgplY2hvICJOb2RlIGxhYmVsaW5nIGNvbXBsZXRlZCBzdWNjZXNzZnVsbHki
+          mode: 493
+          path: /usr/local/bin/oci-node-labeler
+    systemd:
+      units:
+        - contents: |
+            [Unit]
+            Description=Label node with OCI availability domain for CSI topology
+            Wants=network-online.target
+            After=network-online.target kubelet.service
+            
+            [Service]
+            Type=oneshot
+            ExecStart=/usr/local/bin/oci-node-labeler
+            RemainAfterExit=yes
+            
+            [Install]
+            WantedBy=multi-user.target
+          enabled: true
+          name: oci-node-labeler.service
+---
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: worker
+  name: 00-worker-oci-node-labels
+spec:
+  config:
+    ignition:
+      version: 3.4.0
+    storage:
+      files:
+        - contents:
+            source: data:text/plain;charset=utf-8;base64,IyEvdXNyL2Jpbi9iYXNoCnNldCAtZXVvIHBpcGVmYWlsCgojIEZldGNoIGF2YWlsYWJpbGl0eSBkb21haW4gZnJvbSBPQ0kgbWV0YWRhdGEKQVZBSUxBQklMSVRZX0RPTUFJTj0kKGN1cmwgLUggIkF1dGhvcml6YXRpb246IEJlYXJlciBPcmFjbGUiIC1MIGh0dHA6Ly8xNjkuMjU0LjE2OS4yNTQvb3BjL3YyL2luc3RhbmNlLyAtLXJldHJ5IDEwIHwganEgLXIgJy5hdmFpbGFiaWxpdHlEb21haW4nKQoKaWYgWyAteiAiJEFWQUlMQUJJTElUWV9ET01BSU4iIF07IHRoZW4KICBlY2hvICJGYWlsZWQgdG8gZmV0Y2ggYXZhaWxhYmlsaXR5IGRvbWFpbiIKICBleGl0IDEKZmkKCiMgV2FpdCBmb3Igbm9kZSB0byBiZSByZWdpc3RlcmVkCk5PREVfTkFNRT0kKGhvc3RuYW1lKQp3aGlsZSAhIG9jIGdldCBub2RlICIkTk9ERV9OQU1FIiAmPi9kZXYvbnVsbDsgZG8KICBlY2hvICJXYWl0aW5nIGZvciBub2RlICROT0RFX05BTUUgdG8gYmUgcmVnaXN0ZXJlZC4uLiIKICBzbGVlcCA1CmRvbmUKCiMgTGFiZWwgdGhlIG5vZGUgd2l0aCB0b3BvbG9neSBrZXlzCmVjaG8gIkxhYmVsaW5nIG5vZGUgJE5PREVfTkFNRSB3aXRoIHpvbmU6ICRBVkFJTEFCSUxJVFlfRE9NQUlOIgpvYyBsYWJlbCBub2RlICIkTk9ERV9OQU1FIiB0b3BvbG9neS5rdWJlcm5ldGVzLmlvL3pvbmU9IiRBVkFJTEFCSUxJVFlfRE9NQUlOIiAtLW92ZXJ3cml0ZQpvYyBsYWJlbCBub2RlICIkTk9ERV9OQU1FIiBmYWlsdXJlLWRvbWFpbi5iZXRhLmt1YmVybmV0ZXMuaW8vem9uZT0iJEFWQUlMQUJJTElUWV9ET01BSU4iIC0tb3ZlcndyaXRlCgplY2hvICJOb2RlIGxhYmVsaW5nIGNvbXBsZXRlZCBzdWNjZXNzZnVsbHki
+          mode: 493
+          path: /usr/local/bin/oci-node-labeler
+    systemd:
+      units:
+        - contents: |
+            [Unit]
+            Description=Label node with OCI availability domain for CSI topology
+            Wants=network-online.target
+            After=network-online.target kubelet.service
+            
+            [Service]
+            Type=oneshot
+            ExecStart=/usr/local/bin/oci-node-labeler
+            RemainAfterExit=yes
+            
+            [Install]
+            WantedBy=multi-user.target
+          enabled: true
+          name: oci-node-labeler.service
+

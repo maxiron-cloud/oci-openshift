@@ -20,6 +20,7 @@ output "dynamic_custom_manifest" {
     %{endif}
     ${file("${path.module}/../../../custom_manifests/manifests/02-machineconfig-ccm.yml")}
     ${file("${path.module}/../../../custom_manifests/manifests/02-machineconfig-csi.yml")}
+    ${file("${path.module}/../../../custom_manifests/manifests/02-machineconfig-node-labels.yml")}
     ${file("${path.module}/../../../custom_manifests/manifests/03-machineconfig-consistent-device-path.yml")}
     ${file("${path.module}/../../../custom_manifests/manifests/04-cluster-network.yml")}
     ${file("${path.module}/../../../custom_manifests/manifests/05-oci-eval-user-data.yml")}

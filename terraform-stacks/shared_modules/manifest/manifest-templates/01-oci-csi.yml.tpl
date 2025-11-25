@@ -269,8 +269,6 @@ spec:
         app: csi-oci-node
         role: csi-oci
     spec:
-      nodeSelector:
-        node-role.kubernetes.io/worker: "" # this is not present in https://github.com/oracle/oci-cloud-controller-manager/blob/master/manifests/container-storage-interface/oci-csi-node-driver.yaml
       containers:
         - name: oci-csi-node-driver
           args:
