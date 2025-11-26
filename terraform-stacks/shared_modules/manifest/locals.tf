@@ -13,7 +13,7 @@ locals {
     oci_image_source            = lookup(local.oci_image_sources, var.oci_driver_version, local.default_oci_driver_image)
     enable_fss_storage_class    = var.enable_fss_storage_class
     fss_mount_target_id         = var.fss_mount_target_id
-    fss_export_path             = var.fss_export_path
+    fss_availability_domain     = var.fss_availability_domain
   })
 
   common_config = <<-COMMONCONFIG

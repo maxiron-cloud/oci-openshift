@@ -576,6 +576,7 @@ reclaimPolicy: Delete
 %{~ if enable_fss_storage_class ~}
 # oci-csi-13-storage-class-fss.yaml
 # Static FSS Storage Class (uses pre-created mount target)
+# Each PVC creates a unique export path (e.g., /pvc-<uuid>) automatically
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
@@ -583,8 +584,8 @@ metadata:
 provisioner: fss.csi.oraclecloud.com
 parameters:
   # Static mount target configuration
+  availabilityDomain: "${fss_availability_domain}"
   mountTargetOcid: "${fss_mount_target_id}"
-  exportPath: "${fss_export_path}"
 reclaimPolicy: Delete
 allowVolumeExpansion: true
 volumeBindingMode: Immediate

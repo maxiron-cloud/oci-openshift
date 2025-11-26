@@ -112,8 +112,8 @@ variable "fss_mount_target_id" {
   default     = ""
 }
 
-variable "fss_export_path" {
+variable "fss_availability_domain" {
   type        = string
-  description = "FSS export path (from static FSS module, e.g., /openshift)"
+  description = "Availability domain for FSS resources (e.g., xgnN:UK-LONDON-1-AD-1)"
   default     = ""
 }

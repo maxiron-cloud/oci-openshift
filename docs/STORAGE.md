@@ -291,12 +291,14 @@ When `enable_fss_storage_class = true` in the create-cluster stack:
 1. **Terraform creates**:
    - File System with cluster-specific naming
    - Mount Target in the `private_ocp` subnet with the cluster compute NSG
-   - Export at path `/openshift` with proper permissions
+   - Initial Export at path `/openshift` (for base mount target setup)
 
 2. **StorageClass references** the pre-created mount target:
    - Name: `oci-fss`
-   - Uses `mountTargetOcid` and `exportPath` parameters
-   - `reclaimPolicy: Retain` (safer - PVs are retained when PVCs are deleted)
+   - Uses `availabilityDomain` and `mountTargetOcid` parameters
+   - **No fixed `exportPath`**: Each PVC automatically creates a unique export path (e.g., `/pvc-<uuid>`)
+   - `reclaimPolicy: Delete` (PVCs and their exports are deleted when PVCs are deleted)
+   - This prevents conflicts when multiple PVCs are created
 
 ### Enabling FSS Storage
 
@@ -320,9 +322,10 @@ metadata:
   name: oci-fss
 provisioner: fss.csi.oraclecloud.com
 parameters:
+  availabilityDomain: "<availability-domain-name>"
   mountTargetOcid: "<pre-created-mount-target-ocid>"
-  exportPath: "/openshift"
-reclaimPolicy: Retain
+  # No exportPath specified - CSI driver creates unique paths per PVC
+reclaimPolicy: Delete
 allowVolumeExpansion: true
 volumeBindingMode: Immediate
 mountOptions:
@@ -331,6 +334,11 @@ mountOptions:
   - timeo=600
   - retrans=2
 ```
+
+**Key Features:**
+- **Dynamic export paths**: Without a fixed `exportPath`, the OCI FSS CSI driver automatically creates a unique export path for each PVC (e.g., `/pvc-<uuid>`)
+- **No conflicts**: Multiple PVCs can be created without path conflicts
+- **Clean lifecycle**: Exports are automatically created and deleted with their PVCs
 
 ### Usage Example
 
@@ -383,12 +391,22 @@ When destroying the cluster:
 
 1. **Delete PVCs first** (optional, but recommended):
    ```bash
-   oc delete pvc my-fss-pvc
+   oc delete pvc --all -A
    ```
+   This removes the dynamically created exports for each PVC.
 
 2. **Destroy the cluster**:
-   - Terraform will automatically clean up: exports → mount target → file system
+   ```bash
+   terraform destroy
+   ```
+   - Terraform will automatically clean up **ALL FSS resources** in order:
+     1. All remaining exports (including the base `/openshift` export)
+     2. Mount target
+     3. File system
    - No manual cleanup of FSS resources required
+   - All resources are tracked in Terraform state and destroyed together
+
+**Important**: Yes, deprovisioning the stack will automatically clean up all FSS resources! There's no risk of orphaned file systems or mount targets.
 
 ### FSS vs Block Volume
 
@@ -407,7 +425,9 @@ When destroying the cluster:
 - **Performance**: FSS is optimized for shared file access, not high-IOPS workloads
 - **Capacity planning**: Consider file system growth when sizing initial deployment
 - **Encryption**: Encryption in transit can be enabled via the `enable_fss_encrypt_in_transit` variable
-- **Reclaim policy**: Set to `Retain` to prevent accidental data loss when PVCs are deleted
+- **Reclaim policy**: Set to `Delete` (default) to automatically clean up exports when PVCs are deleted
+- **Multiple PVCs**: Each PVC gets its own unique export path automatically (e.g., `/pvc-<uuid>`)
+- **No path conflicts**: The dynamic export path approach prevents conflicts between multiple PVCs
 
 ### Troubleshooting
 
