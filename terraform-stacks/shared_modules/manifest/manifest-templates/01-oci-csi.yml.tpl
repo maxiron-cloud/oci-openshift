@@ -586,6 +586,7 @@ parameters:
   # Static mount target configuration
   availabilityDomain: "${fss_availability_domain}"
   mountTargetOcid: "${fss_mount_target_id}"
+  exportOptions: '[{"source":"0.0.0.0/0","requirePrivilegedSourcePort":false,"access":"READ_WRITE","identitySquash":"NONE"}]'
 reclaimPolicy: Delete
 allowVolumeExpansion: true
 volumeBindingMode: Immediate

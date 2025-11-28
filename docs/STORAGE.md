@@ -324,6 +324,7 @@ provisioner: fss.csi.oraclecloud.com
 parameters:
   availabilityDomain: "<availability-domain-name>"
   mountTargetOcid: "<pre-created-mount-target-ocid>"
+  exportOptions: '[{"source":"0.0.0.0/0","requirePrivilegedSourcePort":false,"access":"READ_WRITE","identitySquash":"NONE"}]'
   # No exportPath specified - CSI driver creates unique paths per PVC
 reclaimPolicy: Delete
 allowVolumeExpansion: true
@@ -339,6 +340,11 @@ mountOptions:
 - **Dynamic export paths**: Without a fixed `exportPath`, the OCI FSS CSI driver automatically creates a unique export path for each PVC (e.g., `/pvc-<uuid>`)
 - **No conflicts**: Multiple PVCs can be created without path conflicts
 - **Clean lifecycle**: Exports are automatically created and deleted with their PVCs
+- **Flexible export options**: Configures NFS export permissions for dynamically created exports:
+  - `source: "0.0.0.0/0"` - Allows access from any IP address
+  - `requirePrivilegedSourcePort: false` - Allows connections from non-privileged ports
+  - `access: "READ_WRITE"` - Grants full read/write access
+  - `identitySquash: "NONE"` - Preserves client user/group IDs
 
 ### Usage Example
 
