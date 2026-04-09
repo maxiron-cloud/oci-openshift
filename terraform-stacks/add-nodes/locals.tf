@@ -17,9 +17,13 @@ locals {
   is_compute_iscsi_type       = can(regex("^BM\\..*$", var.compute_shape))
 
   current_cp_count      = length(data.oci_load_balancer_backends.openshift_api_backend.backends)
-  current_compute_count = length(data.oci_load_balancer_backends.openshift_apps_ingress_http.backends) - local.current_cp_count
+  current_compute_count = var.existing_compute_count != null ? var.existing_compute_count : length(data.oci_load_balancer_backends.openshift_apps_ingress_http.backends) - local.current_cp_count
 
-  day_2_image_name = format("%s-day-2", var.cluster_name)
+  day_2_image_name   = format("%s-day-2", var.cluster_name)
+  import_day_2_image = var.add_nodes_phase != "discover"
+  compute_image_id = local.import_day_2_image ? (
+    local.is_compute_iscsi_type ? module.image.op_image_openshift_image_native : module.image.op_image_openshift_image_paravirtualized
+  ) : var.placeholder_image_ocid
 
   cluster_instance_role_tag_namespace = var.cluster_instance_role_tag_namespace != "" ? var.cluster_instance_role_tag_namespace : format("openshift-%s", var.cluster_name)
 }

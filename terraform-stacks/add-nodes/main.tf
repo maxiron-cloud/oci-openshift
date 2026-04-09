@@ -38,7 +38,7 @@ module "image" {
   depends_on = [module.tags.wait_for_tag_consistency]
 
   compartment_ocid            = var.compartment_ocid
-  create_openshift_instances  = true
+  create_openshift_instances  = local.import_day_2_image
   image_name                  = local.day_2_image_name
   is_control_plane_iscsi_type = local.is_control_plane_iscsi_type
   is_compute_iscsi_type       = local.is_compute_iscsi_type
@@ -80,6 +80,7 @@ module "compute" {
   is_control_plane_iscsi_type = local.is_control_plane_iscsi_type
   is_compute_iscsi_type       = local.is_compute_iscsi_type
   create_openshift_instances  = true
+  register_lb_backends        = var.register_lb_backends
 
   control_plane_shape                   = var.control_plane_shape
   control_plane_boot_size               = var.control_plane_boot_size
@@ -108,6 +109,7 @@ module "compute" {
   // Depedency on image
   op_image_openshift_image_paravirtualized = module.image.op_image_openshift_image_paravirtualized
   op_image_openshift_image_native          = module.image.op_image_openshift_image_native
+  compute_image_id                         = local.compute_image_id
 
   // Depedency on networks
   op_subnet_private_ocp                              = module.network.subnet_details.private_ocp_subnet.id

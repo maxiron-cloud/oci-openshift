@@ -130,6 +130,35 @@ variable "openshift_image_source_uri" {
   description = "The OCI Object Storage URL for the OpenShift image. Before provisioning resources through this Resource Manager stack, users should upload the OpenShift image to OCI Object Storage, create a pre-authenticated requests (PAR) uri, and paste the uri to this block. For more detail regarding Object storage and PAR, please visit https://docs.oracle.com/en-us/iaas/Content/Object/Concepts/objectstorageoverview.htm and https://docs.oracle.com/en-us/iaas/Content/Object/Tasks/usingpreauthenticatedrequests.htm ."
 }
 
+variable "add_nodes_phase" {
+  type        = string
+  description = "Controls whether the stack creates placeholder instances for identity discovery or performs the legacy final-image flow."
+  default     = "legacy-final"
+
+  validation {
+    condition     = contains(["discover", "legacy-final"], var.add_nodes_phase)
+    error_message = "The add_nodes_phase value must be either 'discover' or 'legacy-final'."
+  }
+}
+
+variable "existing_compute_count" {
+  type        = number
+  description = "The number of compute nodes that already exist before this add-nodes run. When set, this overrides load-balancer-derived worker indexing."
+  default     = null
+}
+
+variable "placeholder_image_ocid" {
+  type        = string
+  description = "The OCI image OCID used for placeholder worker instances during add_nodes_phase=discover."
+  default     = ""
+}
+
+variable "register_lb_backends" {
+  type        = bool
+  description = "Whether newly created nodes should be registered in the load balancers."
+  default     = true
+}
+
 variable "starting_ad_name_cp" {
   description = "Name of the AD to start node distribution from"
   type        = string

@@ -80,7 +80,7 @@ resource "oci_core_instance" "compute_node" {
     source_type             = "image"
     boot_volume_size_in_gbs = var.compute_boot_size
     boot_volume_vpus_per_gb = var.compute_boot_volume_vpus_per_gb
-    source_id               = var.is_compute_iscsi_type ? var.op_image_openshift_image_native : var.op_image_openshift_image_paravirtualized
+    source_id               = var.compute_image_id
   }
 
   dynamic "shape_config" {

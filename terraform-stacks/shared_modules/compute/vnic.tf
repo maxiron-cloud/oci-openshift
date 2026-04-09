@@ -28,6 +28,15 @@ data "oci_core_vnic_attachments" "compute_primary_vnic_attachments" {
   depends_on = [oci_core_instance.compute_node]
 }
 
+data "oci_core_boot_volume_attachments" "compute_boot_volume_attachments" {
+  for_each            = var.create_openshift_instances ? var.compute_node_map : {}
+  availability_domain = each.value.ad_name
+  compartment_id      = var.compartment_ocid
+  instance_id         = oci_core_instance.compute_node[each.key].id
+
+  depends_on = [oci_core_instance.compute_node]
+}
+
 data "oci_core_vnic" "compute_primary_vnic" {
   for_each = var.create_openshift_instances && !var.is_compute_iscsi_type ? var.compute_node_map : {}
   vnic_id  = data.oci_core_vnic_attachments.compute_primary_vnic_attachments[each.key].vnic_attachments[0].vnic_id
