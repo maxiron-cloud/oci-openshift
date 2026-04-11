@@ -78,11 +78,6 @@ variable "create_openshift_instances" {
   type = bool
 }
 
-variable "register_lb_backends" {
-  type    = bool
-  default = true
-}
-
 variable "op_network_security_group_cluster_controlplane_nsg" {
   type = string
 }
@@ -97,11 +92,6 @@ variable "op_image_openshift_image_paravirtualized" {
 
 variable "op_image_openshift_image_native" {
   type = string
-}
-
-variable "compute_image_id" {
-  type        = string
-  description = "The image OCID used when launching compute nodes."
 }
 
 variable "op_lb_openshift_api_int_lb" {

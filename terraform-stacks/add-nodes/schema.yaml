@@ -53,10 +53,6 @@ variableGroups:
 - title: "Advanced Configurations"
   variables:
   - cluster_instance_role_tag_namespace
-  - add_nodes_phase
-  - existing_compute_count
-  - placeholder_image_ocid
-  - register_lb_backends
 
 ###########
 # VARIABLES
@@ -292,33 +288,3 @@ variables:
     title: Tag Namespace For OpenShift Instance Role Tagging
     description: To assign roles like control_plane or compute to instances, a Tag Namespace is required. If you're using the default format openshift-"$cluster_name", you can skip specifying the Tag Namespace—it's automatically detected using the cluster name. If your setup uses a custom format, be sure to provide the correct Tag Namespace explicitly.
     type: string
-
-  add_nodes_phase:
-    title: Add Nodes Phase
-    description: Controls whether the stack creates placeholder instances for identity discovery or uses the legacy final-image flow.
-    type: enum
-    enum:
-      - discover
-      - legacy-final
-    default: legacy-final
-    required: false
-
-  existing_compute_count:
-    title: Existing Compute Count
-    description: Overrides load-balancer-derived worker indexing when creating placeholder nodes before load balancer registration.
-    type: integer
-    required: false
-
-  placeholder_image_ocid:
-    title: Placeholder Image OCID
-    description: OCI image OCID used for placeholder worker instances during the discovery phase.
-    type: string
-    default: ""
-    required: false
-
-  register_lb_backends:
-    title: Register Load Balancer Backends
-    description: When false, newly created nodes are not registered in the cluster load balancers.
-    type: boolean
-    default: true
-    required: false

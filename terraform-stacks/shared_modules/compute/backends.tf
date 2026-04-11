@@ -2,7 +2,7 @@
 # backends for openshift nodes
 
 resource "oci_load_balancer_backend" "openshift_cluster_api_backend_set_external_backends" {
-  for_each         = var.create_openshift_instances && var.register_lb_backends ? var.cp_node_map : {}
+  for_each         = var.create_openshift_instances ? var.cp_node_map : {}
   load_balancer_id = var.op_lb_openshift_api_lb
   backendset_name  = var.op_lb_bs_openshift_cluster_api_backend_set_external
   port             = 6443
@@ -10,7 +10,7 @@ resource "oci_load_balancer_backend" "openshift_cluster_api_backend_set_external
 }
 
 resource "oci_load_balancer_backend" "openshift_cp_cluster_ingress_https_backend_set_backends" {
-  for_each         = var.create_openshift_instances && var.register_lb_backends ? var.cp_node_map : {}
+  for_each         = var.create_openshift_instances ? var.cp_node_map : {}
   load_balancer_id = var.op_lb_openshift_apps_lb
   backendset_name  = var.op_lb_bs_openshift_cluster_ingress_https_backend_set
   port             = 443
@@ -18,7 +18,7 @@ resource "oci_load_balancer_backend" "openshift_cp_cluster_ingress_https_backend
 }
 
 resource "oci_load_balancer_backend" "openshift_cp_cluster_ingress_http_backend_set_backends" {
-  for_each         = var.create_openshift_instances && var.register_lb_backends ? var.cp_node_map : {}
+  for_each         = var.create_openshift_instances ? var.cp_node_map : {}
   load_balancer_id = var.op_lb_openshift_apps_lb
   backendset_name  = var.op_lb_bs_openshift_cluster_ingress_http_backend_set
   port             = 80
@@ -26,7 +26,7 @@ resource "oci_load_balancer_backend" "openshift_cp_cluster_ingress_http_backend_
 }
 
 resource "oci_load_balancer_backend" "openshift_cluster_api_backend_set_internal_backends" {
-  for_each         = var.create_openshift_instances && var.register_lb_backends ? var.cp_node_map : {}
+  for_each         = var.create_openshift_instances ? var.cp_node_map : {}
   load_balancer_id = var.op_lb_openshift_api_int_lb
   backendset_name  = var.op_lb_bs_openshift_cluster_api_backend_set_internal
   port             = 6443
@@ -34,7 +34,7 @@ resource "oci_load_balancer_backend" "openshift_cluster_api_backend_set_internal
 }
 
 resource "oci_load_balancer_backend" "openshift_cluster_infra-mcs_backend_set_backends" {
-  for_each         = var.create_openshift_instances && var.register_lb_backends ? var.cp_node_map : {}
+  for_each         = var.create_openshift_instances ? var.cp_node_map : {}
   load_balancer_id = var.op_lb_openshift_api_int_lb
   backendset_name  = var.op_lb_bs_openshift_cluster_infra-mcs_backend_set
   port             = 22623
@@ -42,7 +42,7 @@ resource "oci_load_balancer_backend" "openshift_cluster_infra-mcs_backend_set_ba
 }
 
 resource "oci_load_balancer_backend" "openshift_cluster_infra-mcs_backend_set_2_backends" {
-  for_each         = var.create_openshift_instances && var.register_lb_backends ? var.cp_node_map : {}
+  for_each         = var.create_openshift_instances ? var.cp_node_map : {}
   load_balancer_id = var.op_lb_openshift_api_int_lb
   backendset_name  = var.op_lb_bs_openshift_cluster_infra-mcs_backend_set_2
   port             = 22624
@@ -50,7 +50,7 @@ resource "oci_load_balancer_backend" "openshift_cluster_infra-mcs_backend_set_2_
 }
 
 resource "oci_load_balancer_backend" "openshift_cluster_infra-mcs_backend_set_api_2_backends" {
-  for_each         = var.create_openshift_instances && var.register_lb_backends ? var.cp_node_map : {}
+  for_each         = var.create_openshift_instances ? var.cp_node_map : {}
   load_balancer_id = var.op_lb_openshift_api_lb
   backendset_name  = var.op_lb_bs_openshift_cluster_infra-mcs_backend_set_api_2
   port             = 22624
@@ -58,7 +58,7 @@ resource "oci_load_balancer_backend" "openshift_cluster_infra-mcs_backend_set_ap
 }
 
 resource "oci_load_balancer_backend" "openshift_cluster_ingress_https_backend_set_backends" {
-  for_each         = var.create_openshift_instances && var.register_lb_backends ? var.compute_node_map : {}
+  for_each         = var.create_openshift_instances ? var.compute_node_map : {}
   load_balancer_id = var.op_lb_openshift_apps_lb
   backendset_name  = var.op_lb_bs_openshift_cluster_ingress_https_backend_set
   port             = 443
@@ -66,7 +66,7 @@ resource "oci_load_balancer_backend" "openshift_cluster_ingress_https_backend_se
 }
 
 resource "oci_load_balancer_backend" "openshift_cluster_ingress_http_backend_set_backends" {
-  for_each         = var.create_openshift_instances && var.register_lb_backends ? var.compute_node_map : {}
+  for_each         = var.create_openshift_instances ? var.compute_node_map : {}
   load_balancer_id = var.op_lb_openshift_apps_lb
   backendset_name  = var.op_lb_bs_openshift_cluster_ingress_http_backend_set
   port             = 80
