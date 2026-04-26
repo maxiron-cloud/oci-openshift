@@ -464,3 +464,60 @@ variable "fss_encrypt_in_transit" {
   description = "Enable encryption in transit for FSS. Valid values: \"true\" or \"false\"."
   default     = "false"
 }
+
+# Security hardening variables
+
+variable "allowed_api_cidrs" {
+  type        = list(string)
+  description = "CIDRs allowed to reach the OpenShift API load balancer on port 6443. An empty list opens access to the entire internet (0.0.0.0/0). Example: [\"203.0.113.10/32\", \"10.0.0.0/8\"]"
+  default     = []
+}
+
+variable "allowed_apps_cidrs" {
+  type        = list(string)
+  description = "CIDRs allowed to reach cluster apps load balancer on ports 80 and 443. An empty list opens access to the entire internet (0.0.0.0/0). Example: [\"203.0.113.10/32\"]"
+  default     = []
+}
+
+variable "enable_waf" {
+  type        = bool
+  description = "Attach an OCI Web Application Firewall policy to the apps load balancer for OWASP and bot protection."
+  default     = false
+}
+
+variable "enable_bastion" {
+  type        = bool
+  description = "Provision an OCI Bastion service in the private OCP subnet for time-limited, audited SSH access to cluster nodes."
+  default     = false
+}
+
+variable "bastion_allowed_cidrs" {
+  type        = list(string)
+  description = "CIDRs allowed to initiate OCI Bastion sessions. Only used when enable_bastion is true."
+  default     = ["0.0.0.0/0"]
+}
+
+# SSL termination — Sectigo (or any CA-signed) wildcard certificate for the apps LB.
+# When set, users see this cert in browser and OCI WAF can inspect HTTPS at Layer 7.
+# Leave empty to keep the current TCP passthrough behaviour (Let's Encrypt visible to users).
+
+variable "ssl_certificate_pem" {
+  type        = string
+  description = "PEM content of the public leaf certificate (STAR_maxiron_cloud.crt / cert.pem). Set to enable SSL termination on the apps LB."
+  default     = ""
+  sensitive   = false
+}
+
+variable "ssl_certificate_chain_pem" {
+  type        = string
+  description = "PEM content of the CA chain bundle (My_CA_Bundle.ca-bundle / chain.pem). Required when ssl_certificate_pem is set."
+  default     = ""
+  sensitive   = false
+}
+
+variable "ssl_private_key_pem" {
+  type        = string
+  description = "PEM content of the private key matching the certificate. Required when ssl_certificate_pem is set."
+  default     = ""
+  sensitive   = true
+}

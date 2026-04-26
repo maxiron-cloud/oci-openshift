@@ -42,6 +42,26 @@ resource "oci_load_balancer_listener" "openshift_cluster_ingress_http" {
   protocol                 = "TCP"
 }
 
+# Upload the external (Sectigo) certificate to the apps LB when SSL termination is enabled.
+# The private key is marked sensitive so Terraform won't print it in plan output.
+resource "oci_load_balancer_certificate" "apps_ssl" {
+  count = var.ssl_certificate_pem != "" ? 1 : 0
+
+  load_balancer_id   = oci_load_balancer_load_balancer.openshift_apps_lb.id
+  certificate_name   = "${var.cluster_name}-apps-ssl"
+
+  # Leaf certificate (e.g. STAR_maxiron_cloud.crt / cert.pem)
+  public_certificate = var.ssl_certificate_pem
+  # CA bundle (e.g. My_CA_Bundle.ca-bundle / chain.pem)
+  ca_certificate     = var.ssl_certificate_chain_pem
+  # Private key matching the certificate
+  private_key        = var.ssl_private_key_pem
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
 resource "oci_load_balancer_backend_set" "openshift_cluster_ingress_https_backend_set" {
   health_checker {
     protocol          = "TCP"
@@ -53,6 +73,19 @@ resource "oci_load_balancer_backend_set" "openshift_cluster_ingress_https_backen
   name             = "openshift_cluster_ingress_https"
   load_balancer_id = oci_load_balancer_load_balancer.openshift_apps_lb.id
   policy           = "LEAST_CONNECTIONS"
+
+  # When SSL termination is active the LB re-encrypts traffic to OpenShift HAProxy.
+  # verify_peer_certificate=false because Let's Encrypt CA is not in the LB trust store.
+  dynamic "ssl_configuration" {
+    for_each = var.ssl_certificate_pem != "" ? [1] : []
+    content {
+      verify_peer_certificate = false
+      protocols               = ["TLSv1.2", "TLSv1.3"]
+      server_order_preference = "ENABLED"
+    }
+  }
+
+  depends_on = [oci_load_balancer_certificate.apps_ssl]
 }
 
 resource "oci_load_balancer_listener" "openshift_cluster_ingress_https" {
@@ -60,7 +93,21 @@ resource "oci_load_balancer_listener" "openshift_cluster_ingress_https" {
   name                     = "openshift_cluster_ingress_https"
   load_balancer_id         = oci_load_balancer_load_balancer.openshift_apps_lb.id
   port                     = 443
-  protocol                 = "TCP"
+  # With SSL termination: protocol "HTTP" means the LB decodes HTTP/HTTPS.
+  # Without cert: fall back to TCP passthrough (current behaviour).
+  protocol = var.ssl_certificate_pem != "" ? "HTTP" : "TCP"
+
+  dynamic "ssl_configuration" {
+    for_each = var.ssl_certificate_pem != "" ? [1] : []
+    content {
+      certificate_name        = oci_load_balancer_certificate.apps_ssl[0].certificate_name
+      verify_peer_certificate = false
+      protocols               = ["TLSv1.2", "TLSv1.3"]
+      server_order_preference = "ENABLED"
+    }
+  }
+
+  depends_on = [oci_load_balancer_certificate.apps_ssl]
 }
 
 resource "oci_load_balancer_backend_set" "openshift_cluster_api_backend_set_internal" {

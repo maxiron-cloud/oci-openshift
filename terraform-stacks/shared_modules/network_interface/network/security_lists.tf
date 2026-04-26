@@ -21,14 +21,8 @@ resource "oci_core_security_list" "public" {
     source   = var.vcn_cidr
     protocol = local.all_protocols
   }
-  ingress_security_rules {
-    source   = local.anywhere
-    protocol = "6"
-    tcp_options {
-      min = 22
-      max = 22
-    }
-  }
+  # SSH (port 22) is intentionally NOT open to the internet here.
+  # Use the OCI Bastion service for time-limited, audited SSH access to nodes.
   egress_security_rules {
     destination = local.anywhere
     protocol    = local.all_protocols

@@ -108,6 +108,10 @@ module "network" {
 
   // Depedency on tags
   defined_tags = module.resource_attribution_tags.openshift_resource_attribution_tag
+
+  # Security hardening: IP allowlists for API and apps access
+  allowed_api_cidrs  = var.allowed_api_cidrs
+  allowed_apps_cidrs = var.allowed_apps_cidrs
 }
 
 module "load_balancer" {
@@ -129,6 +133,36 @@ module "load_balancer" {
   op_subnet_private_ocp                    = module.network.op_subnet_private_ocp
   op_subnet_public                         = module.network.op_subnet_public
   op_network_security_group_cluster_lb_nsg = module.network.op_network_security_group_cluster_lb_nsg
+
+  # Optional SSL termination with external (Sectigo) certificate
+  ssl_certificate_pem       = var.ssl_certificate_pem
+  ssl_certificate_chain_pem = var.ssl_certificate_chain_pem
+  ssl_private_key_pem       = var.ssl_private_key_pem
+}
+
+module "waf" {
+  source = "../shared_modules/waf"
+
+  compartment_ocid = var.compartment_ocid
+  cluster_name     = var.cluster_name
+  enable_waf       = var.enable_waf
+  apps_lb_id       = module.load_balancer.op_lb_openshift_apps_lb
+  defined_tags     = module.resource_attribution_tags.openshift_resource_attribution_tag
+
+  depends_on = [module.load_balancer]
+}
+
+module "bastion" {
+  source = "../shared_modules/bastion"
+
+  compartment_ocid      = var.compartment_ocid
+  cluster_name          = var.cluster_name
+  enable_bastion        = var.enable_bastion
+  target_subnet_id      = module.network.op_subnet_private_ocp
+  bastion_allowed_cidrs = var.bastion_allowed_cidrs
+  defined_tags          = module.resource_attribution_tags.openshift_resource_attribution_tag
+
+  depends_on = [module.network]
 }
 
 ## Web Server for creating OCP install images and hosting rootfs and ignition files

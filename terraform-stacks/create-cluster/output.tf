@@ -38,3 +38,13 @@ output "install_config" {
 output "stack_version" {
   value = local.stack_version
 }
+
+output "bastion_id" {
+  description = "OCID of the OCI Bastion service (null when enable_bastion=false)."
+  value       = module.bastion.bastion_id
+}
+
+output "waf_id" {
+  description = "OCID of the WAF attachment to the apps LB (null when enable_waf=false)."
+  value       = module.waf.waf_id
+}

@@ -12,11 +12,14 @@ resource "oci_core_network_security_group_security_rule" "cluster_lb_nsg_rule_1"
   protocol                  = local.all_protocols
 }
 
-resource "oci_core_network_security_group_security_rule" "cluster_lb_nsg_rule_2" {
+# API port 6443: allow from each CIDR in allowed_api_cidrs, or open to all when the list is empty.
+resource "oci_core_network_security_group_security_rule" "cluster_lb_nsg_api_allowlist" {
+  for_each = length(var.allowed_api_cidrs) > 0 ? toset(var.allowed_api_cidrs) : toset([local.anywhere])
+
   network_security_group_id = oci_core_network_security_group.cluster_lb_nsg.id
   protocol                  = "6"
   direction                 = "INGRESS"
-  source                    = local.anywhere
+  source                    = each.value
   tcp_options {
     destination_port_range {
       min = 6443
@@ -25,11 +28,14 @@ resource "oci_core_network_security_group_security_rule" "cluster_lb_nsg_rule_2"
   }
 }
 
-resource "oci_core_network_security_group_security_rule" "cluster_lb_nsg_rule_3" {
+# Apps ports 80/443: allow from each CIDR in allowed_apps_cidrs, or open to all when the list is empty.
+resource "oci_core_network_security_group_security_rule" "cluster_lb_nsg_apps_http_allowlist" {
+  for_each = length(var.allowed_apps_cidrs) > 0 ? toset(var.allowed_apps_cidrs) : toset([local.anywhere])
+
   network_security_group_id = oci_core_network_security_group.cluster_lb_nsg.id
   protocol                  = "6"
   direction                 = "INGRESS"
-  source                    = local.anywhere
+  source                    = each.value
   tcp_options {
     destination_port_range {
       min = 80
@@ -38,11 +44,13 @@ resource "oci_core_network_security_group_security_rule" "cluster_lb_nsg_rule_3"
   }
 }
 
-resource "oci_core_network_security_group_security_rule" "cluster_lb_nsg_rule_4" {
+resource "oci_core_network_security_group_security_rule" "cluster_lb_nsg_apps_https_allowlist" {
+  for_each = length(var.allowed_apps_cidrs) > 0 ? toset(var.allowed_apps_cidrs) : toset([local.anywhere])
+
   network_security_group_id = oci_core_network_security_group.cluster_lb_nsg.id
   protocol                  = "6"
   direction                 = "INGRESS"
-  source                    = local.anywhere
+  source                    = each.value
   tcp_options {
     destination_port_range {
       min = 443

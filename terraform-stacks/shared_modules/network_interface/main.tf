@@ -23,6 +23,9 @@ module "network" {
 
   // Depedency on tags
   defined_tags = var.defined_tags
+
+  allowed_api_cidrs  = var.allowed_api_cidrs
+  allowed_apps_cidrs = var.allowed_apps_cidrs
 }
 
 module "network_validator" {
