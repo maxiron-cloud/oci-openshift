@@ -38,15 +38,6 @@ resource "oci_waf_web_app_firewall_policy" "apps_waf_policy" {
         key     = "9300000"
         version = 2
       }
-      protection_capability_settings {
-        max_http_request_headers                     = 25
-        max_http_request_header_names_size_in_bytes  = 3000
-        max_http_request_header_values_size_in_bytes = 8000
-        max_http_request_query_string_length         = 8000
-        max_total_arguments_count                    = 255
-        max_single_argument_length                   = 400
-        max_argument_count                           = 255
-      }
     }
   }
 
