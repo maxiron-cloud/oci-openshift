@@ -369,6 +369,6 @@ module "logging" {
   cluster_name     = var.cluster_name
   apps_lb_id       = module.load_balancer.op_lb_openshift_apps_lb
   api_lb_id        = module.load_balancer.op_lb_openshift_api_lb
-  waf_id           = coalesce(module.waf.waf_id, "")
-  defined_tags     = local.defined_tags
+  waf_id           = module.waf.waf_id != null ? module.waf.waf_id : ""
+  defined_tags     = module.resource_attribution_tags.openshift_resource_attribution_tag
 }
