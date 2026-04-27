@@ -521,3 +521,9 @@ variable "ssl_private_key_pem" {
   default     = ""
   sensitive   = true
 }
+
+variable "enable_logging" {
+  type        = bool
+  description = "Create an OCI log group and enable access/error logs for the apps LB, API LB, and WAF. Default: true."
+  default     = true
+}

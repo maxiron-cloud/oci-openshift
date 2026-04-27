@@ -1,3 +1,7 @@
+output "log_group_id" {
+  value = length(module.logging) > 0 ? module.logging[0].log_group_id : null
+}
+
 output "open_shift_api_int_lb_addr" {
   value = module.load_balancer.op_lb_openshift_api_int_lb_ip_addr
 }

@@ -360,3 +360,15 @@ module "resource_attribution_tags" {
   }
   tag_namespace_compartment_ocid_resource_tagging = var.tag_namespace_compartment_ocid_resource_tagging
 }
+
+module "logging" {
+  count  = var.enable_logging ? 1 : 0
+  source = "../shared_modules/logging"
+
+  compartment_ocid = var.compartment_ocid
+  cluster_name     = var.cluster_name
+  apps_lb_id       = module.load_balancer.op_lb_openshift_apps_lb
+  api_lb_id        = module.load_balancer.op_lb_openshift_api_lb
+  waf_id           = coalesce(module.waf.waf_id, "")
+  defined_tags     = local.defined_tags
+}

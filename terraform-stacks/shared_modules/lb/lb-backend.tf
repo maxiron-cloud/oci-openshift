@@ -81,6 +81,7 @@ resource "oci_load_balancer_backend_set" "openshift_cluster_ingress_https_backen
     content {
       verify_peer_certificate = false
       protocols               = ["TLSv1.2", "TLSv1.3"]
+      cipher_suite_name       = "oci-tls-12-13-wider-ssl-cipher-suite-v1"
       server_order_preference = "ENABLED"
     }
   }
@@ -103,6 +104,7 @@ resource "oci_load_balancer_listener" "openshift_cluster_ingress_https" {
       certificate_name        = oci_load_balancer_certificate.apps_ssl[0].certificate_name
       verify_peer_certificate = false
       protocols               = ["TLSv1.2", "TLSv1.3"]
+      cipher_suite_name       = "oci-tls-12-13-wider-ssl-cipher-suite-v1"
       server_order_preference = "ENABLED"
     }
   }
