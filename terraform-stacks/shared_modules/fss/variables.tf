@@ -27,10 +27,21 @@ variable "display_name_prefix" {
   description = "Prefix for resource display names (typically cluster name)"
 }
 
+variable "nfs_source_cidr" {
+  type        = string
+  description = "CIDR allowed to mount the FSS export. Defaults to the cluster VCN CIDR."
+}
+
 variable "encrypt_in_transit" {
   type        = bool
   description = "Enable encryption in transit for NFS connections"
   default     = false
+}
+
+variable "kms_key_id" {
+  type        = string
+  description = "Optional OCI Vault customer-managed key OCID for file system encryption. Empty string uses Oracle-managed keys."
+  default     = ""
 }
 
 variable "defined_tags" {

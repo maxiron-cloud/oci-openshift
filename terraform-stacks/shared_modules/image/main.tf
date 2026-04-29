@@ -22,6 +22,14 @@ resource "oci_core_image" "openshift_image_paravirtualized" {
     source_image_type = "QCOW2"
   }
   defined_tags = var.defined_tags
+
+  # source_uri is a one-time import URL (PAR) that expires shortly after cluster creation.
+  # Subsequent applies (cert-sync, monitoring updates, etc.) will not have the original URL,
+  # causing Terraform to see a diff and try to replace the image. Ignore it — the image is
+  # already imported and the source URI is irrelevant after initial creation.
+  lifecycle {
+    ignore_changes = [image_source_details]
+  }
 }
 
 // Skip native image only when both cp and compute are VM
@@ -38,6 +46,11 @@ resource "oci_core_image" "openshift_image_native" {
     source_image_type = "QCOW2"
   }
   defined_tags = var.defined_tags
+
+  # Same rationale as openshift_image_paravirtualized above.
+  lifecycle {
+    ignore_changes = [image_source_details]
+  }
 }
 
 

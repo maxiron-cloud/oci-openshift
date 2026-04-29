@@ -134,10 +134,6 @@ module "load_balancer" {
   op_subnet_public                         = module.network.op_subnet_public
   op_network_security_group_cluster_lb_nsg = module.network.op_network_security_group_cluster_lb_nsg
 
-  # Optional SSL termination with external (Sectigo) certificate
-  ssl_certificate_pem       = var.ssl_certificate_pem
-  ssl_certificate_chain_pem = var.ssl_certificate_chain_pem
-  ssl_private_key_pem       = var.ssl_private_key_pem
 }
 
 module "waf" {
@@ -225,6 +221,7 @@ module "compute" {
   compute_boot_volume_vpus_per_gb = var.compute_boot_volume_vpus_per_gb
   compute_memory                  = var.compute_memory
   compute_ocpu                    = var.compute_ocpu
+  kms_key_id                      = var.kms_key_id
 
   distribute_cp_instances_across_fds      = var.distribute_cp_instances_across_fds
   distribute_compute_instances_across_fds = var.distribute_compute_instances_across_fds
@@ -303,13 +300,15 @@ module "fss" {
   count  = var.enable_fss_storage_class ? 1 : 0
   source = "../shared_modules/fss"
 
-  compartment_ocid     = var.compartment_ocid
-  availability_domain  = module.meta.ad_name
-  subnet_ocid          = module.network.op_subnet_private_ocp
-  nsg_ocid             = module.network.op_network_security_group_cluster_compute_nsg
-  display_name_prefix  = var.cluster_name
-  encrypt_in_transit   = var.fss_encrypt_in_transit == "true"
-  defined_tags         = module.resource_attribution_tags.openshift_resource_attribution_tag
+  compartment_ocid    = var.compartment_ocid
+  availability_domain = module.meta.ad_name
+  subnet_ocid         = module.network.op_subnet_private_ocp
+  nsg_ocid            = module.network.op_network_security_group_cluster_compute_nsg
+  display_name_prefix = var.cluster_name
+  nfs_source_cidr     = var.vcn_cidr
+  encrypt_in_transit  = var.fss_encrypt_in_transit == "true"
+  kms_key_id          = var.fss_kms_key_id
+  defined_tags        = module.resource_attribution_tags.openshift_resource_attribution_tag
 
   depends_on = [module.network]
 }
@@ -369,6 +368,39 @@ module "logging" {
   cluster_name     = var.cluster_name
   apps_lb_id       = module.load_balancer.op_lb_openshift_apps_lb
   api_lb_id        = module.load_balancer.op_lb_openshift_api_lb
-  waf_id           = module.waf.waf_id != null ? module.waf.waf_id : ""
-  defined_tags     = module.resource_attribution_tags.openshift_resource_attribution_tag
+  # Pass static boolean for count — computed OCID cannot be used in count
+  enable_waf = var.enable_waf
+  waf_id     = module.waf.waf_id != null ? module.waf.waf_id : ""
+  # bastion_id removed — OCI Bastion does not support SERVICE logging; session logs are in OCI Audit
+  log_retention_days = var.log_retention_days
+  enable_flow_logs   = true
+  vcn_id             = module.network.op_vcn_openshift_vcn
+  defined_tags       = module.resource_attribution_tags.openshift_resource_attribution_tag
+}
+
+module "monitoring" {
+  count  = var.enable_monitoring ? 1 : 0
+  source = "../shared_modules/monitoring"
+
+  compartment_ocid = var.compartment_ocid
+  cluster_name     = var.cluster_name
+  apps_lb_id       = module.load_balancer.op_lb_openshift_apps_lb
+  api_lb_id        = module.load_balancer.op_lb_openshift_api_lb
+  # Pass static boolean for count — computed OCID cannot be used in count
+  enable_waf        = var.enable_waf
+  waf_id            = module.waf.waf_id != null ? module.waf.waf_id : ""
+  alert_webhook_url = var.alert_webhook_url
+  alert_email       = var.alert_email
+  defined_tags      = module.resource_attribution_tags.openshift_resource_attribution_tag
+}
+
+module "boot_volume_backup" {
+  source = "../shared_modules/boot_volume_backup"
+
+  depends_on = [module.compute]
+
+  enable_boot_volume_backup = var.enable_boot_volume_backup
+  boot_volume_backup_policy = var.boot_volume_backup_policy
+  cp_boot_volume_ids        = module.compute.cp_boot_volume_ids
+  compute_boot_volume_ids   = module.compute.compute_boot_volume_ids
 }

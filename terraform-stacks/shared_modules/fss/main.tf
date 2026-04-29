@@ -30,6 +30,7 @@ resource "oci_file_storage_file_system" "cluster_fss" {
   compartment_id      = var.compartment_ocid
   availability_domain = var.availability_domain
   display_name        = "${var.display_name_prefix}-fss"
+  kms_key_id          = var.kms_key_id != "" ? var.kms_key_id : null
 
   defined_tags = var.defined_tags
 
@@ -68,7 +69,7 @@ resource "oci_file_storage_export" "cluster_export" {
   path           = "/openshift"
 
   export_options {
-    source = "10.0.0.0/16"
+    source = var.nfs_source_cidr
     access = "READ_WRITE"
     
     # identity_squash: NONE allows client user/group IDs to be preserved

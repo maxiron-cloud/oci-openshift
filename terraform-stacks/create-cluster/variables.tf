@@ -264,6 +264,12 @@ variable "compute_boot_volume_vpus_per_gb" {
   }
 }
 
+variable "kms_key_id" {
+  type        = string
+  description = "Optional OCI Vault customer-managed key OCID for compute boot volumes. Empty string uses Oracle-managed keys."
+  default     = ""
+}
+
 variable "distribute_compute_instances_across_ads" {
   description = "Whether compute instances should be distributed across ADs in a round-robin sequence starting from your selected AD. If false, then all nodes will be created in the selected starting AD."
   type        = bool
@@ -465,6 +471,12 @@ variable "fss_encrypt_in_transit" {
   default     = "false"
 }
 
+variable "fss_kms_key_id" {
+  type        = string
+  description = "Optional OCI Vault customer-managed key OCID for FSS file system encryption. Empty string uses Oracle-managed keys."
+  default     = ""
+}
+
 # Security hardening variables
 
 variable "allowed_api_cidrs" {
@@ -497,33 +509,46 @@ variable "bastion_allowed_cidrs" {
   default     = ["0.0.0.0/0"]
 }
 
-# SSL termination — Sectigo (or any CA-signed) wildcard certificate for the apps LB.
-# When set, users see this cert in browser and OCI WAF can inspect HTTPS at Layer 7.
-# Leave empty to keep the current TCP passthrough behaviour (Let's Encrypt visible to users).
-
-variable "ssl_certificate_pem" {
-  type        = string
-  description = "PEM content of the public leaf certificate (STAR_maxiron_cloud.crt / cert.pem). Set to enable SSL termination on the apps LB."
-  default     = ""
-  sensitive   = false
+variable "enable_logging" {
+  type        = bool
+  description = "Create an OCI log group and enable access/error logs for the apps LB, API LB, WAF, and Bastion. Default: true."
+  default     = true
 }
 
-variable "ssl_certificate_chain_pem" {
-  type        = string
-  description = "PEM content of the CA chain bundle (My_CA_Bundle.ca-bundle / chain.pem). Required when ssl_certificate_pem is set."
-  default     = ""
-  sensitive   = false
+variable "log_retention_days" {
+  type        = number
+  description = "Log retention period in days for all OCI Logging resources. ISO 27001 A.8.15 minimum is 90 days."
+  default     = 90
 }
 
-variable "ssl_private_key_pem" {
+variable "enable_monitoring" {
+  type        = bool
+  description = "Create OCI Monitoring alarms (LB unhealthy backend, WAF block spike, CPU) with ONS notification topic. Requires alert_webhook_url and/or alert_email."
+  default     = false
+}
+
+variable "alert_webhook_url" {
   type        = string
-  description = "PEM content of the private key matching the certificate. Required when ssl_certificate_pem is set."
+  description = "HTTPS webhook URL (Teams/Slack/PagerDuty) for OCI Monitoring alarm notifications. Used when enable_monitoring is true."
   default     = ""
   sensitive   = true
 }
 
-variable "enable_logging" {
+variable "alert_email" {
+  type        = string
+  description = "Email address to receive OCI Monitoring alarm notifications via ONS email subscription. Used when enable_monitoring is true."
+  default     = ""
+  sensitive   = true
+}
+
+variable "enable_boot_volume_backup" {
   type        = bool
-  description = "Create an OCI log group and enable access/error logs for the apps LB, API LB, and WAF. Default: true."
-  default     = true
+  description = "Assign an OCI-managed backup policy to all cluster boot volumes. Provides OS-level disaster recovery independent of etcd backups."
+  default     = false
+}
+
+variable "boot_volume_backup_policy" {
+  type        = string
+  description = "OCI-managed backup policy level: bronze (weekly), silver (daily+weekly), gold (daily+weekly+monthly). Default: gold."
+  default     = "gold"
 }

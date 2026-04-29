@@ -36,6 +36,7 @@ resource "oci_core_instance" "control_plane_node" {
     source_type             = "image"
     boot_volume_size_in_gbs = var.control_plane_boot_size
     boot_volume_vpus_per_gb = var.control_plane_boot_volume_vpus_per_gb
+    kms_key_id              = var.kms_key_id != "" ? var.kms_key_id : null
     source_id               = var.is_control_plane_iscsi_type ? var.op_image_openshift_image_native : var.op_image_openshift_image_paravirtualized
   }
 
@@ -80,6 +81,7 @@ resource "oci_core_instance" "compute_node" {
     source_type             = "image"
     boot_volume_size_in_gbs = var.compute_boot_size
     boot_volume_vpus_per_gb = var.compute_boot_volume_vpus_per_gb
+    kms_key_id              = var.kms_key_id != "" ? var.kms_key_id : null
     source_id               = var.is_compute_iscsi_type ? var.op_image_openshift_image_native : var.op_image_openshift_image_paravirtualized
   }
 

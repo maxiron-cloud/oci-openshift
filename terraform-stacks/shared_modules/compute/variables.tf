@@ -34,6 +34,12 @@ variable "compute_boot_volume_vpus_per_gb" {
   type = number
 }
 
+variable "kms_key_id" {
+  type        = string
+  default     = ""
+  description = "Optional OCI Vault customer-managed key OCID for boot volume encryption. Empty string uses Oracle-managed keys."
+}
+
 variable "compute_memory" {
   type = number
 }
