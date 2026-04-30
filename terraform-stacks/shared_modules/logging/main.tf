@@ -86,20 +86,22 @@ resource "oci_logging_log" "waf" {
 
 # ── VCN Flow Logs ─────────────────────────────────────────────────────────────
 #
-# OCI VCN flow logs capture TCP/UDP accept/reject decisions at the VCN level.
+# OCI VCN flow logs are subnet-scoped (VCN-level resources are not supported).
+# A separate log stream is created for each subnet passed via flow_log_subnets.
+# Category "all" captures both ACCEPTED and REJECTED traffic per subnet.
+#
 # Records include: src/dst IP, src/dst port, protocol, bytes, packets, action.
 # These logs support ISO 27001 A.8.16 (network activity monitoring) and are
 # invaluable for incident investigation and NSG rule tuning.
 #
-# Category "all" captures both ACCEPTED and REJECTED traffic.
 # Cost: ~$0.0002/100k log entries. For a typical OpenShift cluster this is
 # under $5/month even with active workloads.
 # ─────────────────────────────────────────────────────────────────────────────
 
-resource "oci_logging_log" "vcn_flow" {
-  count = var.enable_flow_logs ? 1 : 0
+resource "oci_logging_log" "subnet_flow" {
+  for_each = var.enable_flow_logs ? var.flow_log_subnets : {}
 
-  display_name       = "vcn-flow-log"
+  display_name       = "${each.key}-flow-log"
   log_group_id       = oci_logging_log_group.cluster_log_group.id
   log_type           = "SERVICE"
   is_enabled         = true
@@ -109,7 +111,7 @@ resource "oci_logging_log" "vcn_flow" {
   configuration {
     source {
       category    = "all"
-      resource    = var.vcn_id
+      resource    = each.value
       service     = "flowlogs"
       source_type = "OCISERVICE"
     }

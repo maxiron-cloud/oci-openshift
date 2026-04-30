@@ -15,7 +15,9 @@ resource "oci_ons_subscription" "webhook" {
 
   compartment_id = var.compartment_ocid
   topic_id       = oci_ons_notification_topic.security_alerts.id
-  protocol       = "HTTPS"
+  # HTTPS is deprecated and only valid for PagerDuty endpoints.
+  # CUSTOM_HTTPS is the correct protocol for generic webhooks (Power Automate, etc.).
+  protocol       = "CUSTOM_HTTPS"
   endpoint       = var.alert_webhook_url
 
   defined_tags = var.defined_tags
@@ -58,7 +60,7 @@ resource "oci_monitoring_alarm" "waf_block_rate" {
   namespace             = "oci_waf"
   query                 = "BlockedRequests[5m].rate() > 50"
   severity              = "CRITICAL"
-  body                  = "WAF is blocking an unusual number of requests on cluster ${var.cluster_name}. This may indicate a DDoS or brute-force attack."
+  body                  = "[Tenant: ${var.tenant_name} | Cluster: ${var.cluster_name}] WAF is blocking an unusual number of requests on cluster ${var.cluster_name}. This may indicate a DDoS or brute-force attack."
   message_format        = "ONS_OPTIMIZED"
 
   defined_tags = var.defined_tags
@@ -74,7 +76,7 @@ resource "oci_monitoring_alarm" "lb_unhealthy_backend" {
   namespace             = "oci_lbaas"
   query                 = "UnHealthyBackendCount[1m].max() > 0"
   severity              = "CRITICAL"
-  body                  = "One or more backends on the apps or API load balancer for cluster ${var.cluster_name} are unhealthy. OpenShift traffic may be impacted."
+  body                  = "[Tenant: ${var.tenant_name} | Cluster: ${var.cluster_name}] One or more backends on the apps or API load balancer for cluster ${var.cluster_name} are unhealthy. OpenShift traffic may be impacted."
   message_format        = "ONS_OPTIMIZED"
 
   defined_tags = var.defined_tags
@@ -90,7 +92,7 @@ resource "oci_monitoring_alarm" "api_4xx_spike" {
   namespace             = "oci_lbaas"
   query                 = "HttpResponses[5m]{httpStatusCode = \"4xx\", loadBalancerId = \"${var.api_lb_id}\"}.rate() > 100"
   severity              = "WARNING"
-  body                  = "The API load balancer for cluster ${var.cluster_name} is receiving an elevated rate of 4xx responses. This may indicate authentication issues or an attack."
+  body                  = "[Tenant: ${var.tenant_name} | Cluster: ${var.cluster_name}] The API load balancer for cluster ${var.cluster_name} is receiving an elevated rate of 4xx responses. This may indicate authentication issues or an attack."
   message_format        = "ONS_OPTIMIZED"
 
   defined_tags = var.defined_tags
@@ -106,7 +108,7 @@ resource "oci_monitoring_alarm" "cpu_high" {
   namespace             = "oci_computeagent"
   query                 = "CpuUtilization[15m]{compartmentId = \"${var.compartment_ocid}\"}.mean() > 90"
   severity              = "WARNING"
-  body                  = "Average CPU utilisation in the ${var.cluster_name} cluster compartment has exceeded 90% for 15 minutes. Consider scaling compute nodes."
+  body                  = "[Tenant: ${var.tenant_name} | Cluster: ${var.cluster_name}] Average CPU utilisation in the ${var.cluster_name} cluster compartment has exceeded 90% for 15 minutes. Consider scaling compute nodes."
   message_format        = "ONS_OPTIMIZED"
 
   defined_tags = var.defined_tags
@@ -123,7 +125,7 @@ resource "oci_monitoring_alarm" "memory_high" {
   namespace             = "oci_computeagent"
   query                 = "MemoryUtilization[15m]{compartmentId = \"${var.compartment_ocid}\"}.mean() > 85"
   severity              = "WARNING"
-  body                  = "Average memory utilisation in the ${var.cluster_name} cluster compartment has exceeded 85% for 15 minutes. Risk of OOM kills on pods or etcd."
+  body                  = "[Tenant: ${var.tenant_name} | Cluster: ${var.cluster_name}] Average memory utilisation in the ${var.cluster_name} cluster compartment has exceeded 85% for 15 minutes. Risk of OOM kills on pods or etcd."
   message_format        = "ONS_OPTIMIZED"
 
   defined_tags = var.defined_tags
@@ -140,7 +142,7 @@ resource "oci_monitoring_alarm" "disk_high" {
   namespace             = "oci_computeagent"
   query                 = "FilesystemUtilization[10m]{compartmentId = \"${var.compartment_ocid}\"}.max() > 80"
   severity              = "CRITICAL"
-  body                  = "Filesystem utilisation on a node in the ${var.cluster_name} cluster compartment has exceeded 80%. OpenShift evicts pods and marks the node DiskPressure at 85%."
+  body                  = "[Tenant: ${var.tenant_name} | Cluster: ${var.cluster_name}] Filesystem utilisation on a node in the ${var.cluster_name} cluster compartment has exceeded 80%. OpenShift evicts pods and marks the node DiskPressure at 85%."
   message_format        = "ONS_OPTIMIZED"
 
   defined_tags = var.defined_tags
@@ -157,7 +159,7 @@ resource "oci_monitoring_alarm" "instance_unreachable" {
   namespace             = "oci_compute_infrastructure_health"
   query                 = "instance_status[1m]{compartmentId = \"${var.compartment_ocid}\"}.sum() < 1"
   severity              = "CRITICAL"
-  body                  = "An instance in the ${var.cluster_name} cluster compartment has become unreachable according to OCI infrastructure health checks. This may indicate a node crash or hardware failure."
+  body                  = "[Tenant: ${var.tenant_name} | Cluster: ${var.cluster_name}] An instance in the ${var.cluster_name} cluster compartment has become unreachable according to OCI infrastructure health checks. This may indicate a node crash or hardware failure."
   message_format        = "ONS_OPTIMIZED"
 
   defined_tags = var.defined_tags

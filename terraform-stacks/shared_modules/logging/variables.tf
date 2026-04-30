@@ -45,10 +45,10 @@ variable "enable_flow_logs" {
   description = "Enable OCI VCN Flow Logs. Always true when logging is enabled (create-cluster passes true). Retained as a variable for module-level flexibility in standalone use."
 }
 
-variable "vcn_id" {
-  type        = string
-  default     = ""
-  description = "OCID of the cluster VCN. Required when enable_flow_logs is true."
+variable "flow_log_subnets" {
+  type        = map(string)
+  default     = {}
+  description = "Map of label to subnet OCID for VCN flow log creation (e.g. { private-ocp = \"ocid1.subnet...\" }). OCI flow logs are subnet-scoped; a separate log stream is created for each entry."
 }
 
 variable "defined_tags" {

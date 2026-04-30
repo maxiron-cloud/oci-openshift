@@ -13,6 +13,12 @@ variable "cluster_name" {
   description = "<strong><em>(Required)</em></strong> - The name of your OpenShift cluster. It should be the same as what was specified when creating the OpenShift ISO and it should be DNS compatible. The cluster_name value must be 1-54 characters. It can use lowercase alphanumeric characters or hyphen (-), but must start and end with a lowercase letter or a number."
 }
 
+variable "tenant_name" {
+  type        = string
+  default     = ""
+  description = "Tenant code passed through to monitoring alarm bodies so webhooks can identify the source tenant without query parameters."
+}
+
 variable "installation_method" {
   type        = string
   description = "Assisted Installer (AI) or Agent-based Installer (ABI)"

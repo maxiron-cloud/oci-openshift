@@ -8,6 +8,11 @@ variable "cluster_name" {
   description = "Cluster name used as a prefix for alarm and topic display names."
 }
 
+variable "tenant_name" {
+  type        = string
+  description = "Tenant code (e.g. 'analytica'). Included in every alarm body so downstream webhooks can identify the source tenant."
+}
+
 variable "apps_lb_id" {
   type        = string
   description = "OCID of the apps (ingress) Load Balancer."
