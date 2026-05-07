@@ -59,6 +59,48 @@ resource "oci_core_network_security_group_security_rule" "cluster_lb_nsg_apps_ht
   }
 }
 
+# Cluster nodes in private subnets can resolve public API/apps DNS names and egress through NAT.
+# Allow the NAT public IP back into the public load balancer so OpenShift route health checks work
+# even when user-facing allowlists are restricted to VPN/admin CIDRs.
+resource "oci_core_network_security_group_security_rule" "cluster_lb_nsg_api_nat_ingress" {
+  network_security_group_id = oci_core_network_security_group.cluster_lb_nsg.id
+  protocol                  = "6"
+  direction                 = "INGRESS"
+  source                    = "${oci_core_nat_gateway.nat_gateway.nat_ip}/32"
+  tcp_options {
+    destination_port_range {
+      min = 6443
+      max = 6443
+    }
+  }
+}
+
+resource "oci_core_network_security_group_security_rule" "cluster_lb_nsg_apps_http_nat_ingress" {
+  network_security_group_id = oci_core_network_security_group.cluster_lb_nsg.id
+  protocol                  = "6"
+  direction                 = "INGRESS"
+  source                    = "${oci_core_nat_gateway.nat_gateway.nat_ip}/32"
+  tcp_options {
+    destination_port_range {
+      min = 80
+      max = 80
+    }
+  }
+}
+
+resource "oci_core_network_security_group_security_rule" "cluster_lb_nsg_apps_https_nat_ingress" {
+  network_security_group_id = oci_core_network_security_group.cluster_lb_nsg.id
+  protocol                  = "6"
+  direction                 = "INGRESS"
+  source                    = "${oci_core_nat_gateway.nat_gateway.nat_ip}/32"
+  tcp_options {
+    destination_port_range {
+      min = 443
+      max = 443
+    }
+  }
+}
+
 resource "oci_core_network_security_group_security_rule" "cluster_lb_nsg_rule_5" {
   network_security_group_id = oci_core_network_security_group.cluster_lb_nsg.id
   protocol                  = local.all_protocols
