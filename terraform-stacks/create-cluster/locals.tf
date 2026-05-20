@@ -16,7 +16,11 @@ locals {
     r.key if r.name == var.region
   ][0]
 
-  home_region = local.region_map[data.oci_identity_tenancy.tenancy.home_region_key]
+  # RMS Instance Principal often cannot read tenancy.home_region_key; fall back to var.region.
+  home_region = try(
+    local.region_map[data.oci_identity_tenancy.tenancy.home_region_key],
+    var.region,
+  )
 
   is_control_plane_iscsi_type = can(regex("^BM\\..*$", var.control_plane_shape))
   is_compute_iscsi_type       = can(regex("^BM\\..*$", var.compute_shape))
