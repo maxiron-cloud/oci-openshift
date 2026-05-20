@@ -521,6 +521,12 @@ variable "enable_logging" {
   default     = true
 }
 
+variable "enable_flow_logs" {
+  type        = bool
+  description = "Create subnet-level VCN flow logs for cluster subnets. Disable when a landing zone already owns flow logs."
+  default     = true
+}
+
 variable "log_retention_days" {
   type        = number
   description = "Log retention period in days for all OCI Logging resources. ISO 27001 A.8.15 minimum is 90 days."

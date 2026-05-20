@@ -1,3 +1,13 @@
+terraform {
+  required_version = ">= 1.0"
+  required_providers {
+    oci = {
+      source  = "oracle/oci"
+      version = ">= 6.12.0"
+    }
+  }
+}
+
 resource "oci_logging_log_group" "cluster_log_group" {
   compartment_id = var.compartment_ocid
   display_name   = "${var.cluster_name}-logs"

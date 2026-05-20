@@ -1,3 +1,13 @@
+terraform {
+  required_version = ">= 1.0"
+  required_providers {
+    oci = {
+      source  = "oracle/oci"
+      version = ">= 6.12.0"
+    }
+  }
+}
+
 # ── ONS Notification Topic ────────────────────────────────────────────────────
 
 resource "oci_ons_notification_topic" "security_alerts" {
@@ -17,8 +27,8 @@ resource "oci_ons_subscription" "webhook" {
   topic_id       = oci_ons_notification_topic.security_alerts.id
   # HTTPS is deprecated and only valid for PagerDuty endpoints.
   # CUSTOM_HTTPS is the correct protocol for generic webhooks (Power Automate, etc.).
-  protocol       = "CUSTOM_HTTPS"
-  endpoint       = var.alert_webhook_url
+  protocol = "CUSTOM_HTTPS"
+  endpoint = var.alert_webhook_url
 
   defined_tags = var.defined_tags
 

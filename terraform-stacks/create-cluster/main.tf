@@ -12,6 +12,10 @@ terraform {
   }
 }
 
+provider "oci" {
+  region = var.region
+}
+
 # Home Region Terraform Provider
 provider "oci" {
   alias  = "home"
@@ -373,24 +377,24 @@ module "logging" {
   waf_id     = module.waf.waf_id != null ? module.waf.waf_id : ""
   # bastion_id removed — OCI Bastion does not support SERVICE logging; session logs are in OCI Audit
   log_retention_days = var.log_retention_days
-  enable_flow_logs   = true
+  enable_flow_logs   = var.enable_flow_logs
   flow_log_subnets = {
     private-ocp        = module.network.op_subnet_private_ocp
     private-bare-metal = module.network.op_subnet_private_bare_metal
     public             = module.network.op_subnet_public
   }
-  defined_tags       = module.resource_attribution_tags.openshift_resource_attribution_tag
+  defined_tags = module.resource_attribution_tags.openshift_resource_attribution_tag
 }
 
 module "monitoring" {
   count  = var.enable_monitoring ? 1 : 0
   source = "../shared_modules/monitoring"
 
-  compartment_ocid  = var.compartment_ocid
-  cluster_name      = var.cluster_name
-  tenant_name       = var.tenant_name
-  apps_lb_id        = module.load_balancer.op_lb_openshift_apps_lb
-  api_lb_id         = module.load_balancer.op_lb_openshift_api_lb
+  compartment_ocid = var.compartment_ocid
+  cluster_name     = var.cluster_name
+  tenant_name      = var.tenant_name
+  apps_lb_id       = module.load_balancer.op_lb_openshift_apps_lb
+  api_lb_id        = module.load_balancer.op_lb_openshift_api_lb
   # Pass static boolean for count — computed OCID cannot be used in count
   enable_waf        = var.enable_waf
   waf_id            = module.waf.waf_id != null ? module.waf.waf_id : ""

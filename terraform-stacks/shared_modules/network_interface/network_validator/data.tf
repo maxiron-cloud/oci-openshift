@@ -11,7 +11,7 @@ data "oci_core_network_security_groups" "existing_lb_nsgs" {
 
   filter {
     name   = "display_name"
-    values = [".*lb.*"]
+    values = [".*(lb|api|ingress).*"]
     regex  = true
   }
 }
@@ -22,7 +22,7 @@ data "oci_core_network_security_groups" "existing_controlplane_nsgs" {
 
   filter {
     name   = "display_name"
-    values = [".*controlplane.*"]
+    values = [".*control.?plane.*"]
     regex  = true
   }
 }
