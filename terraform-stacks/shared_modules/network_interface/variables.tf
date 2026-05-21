@@ -66,3 +66,21 @@ variable "allowed_apps_cidrs" {
   description = "CIDRs allowed to reach cluster applications on ports 80/443. Empty list allows all."
   default     = []
 }
+
+variable "existing_lb_nsg_id" {
+  type        = string
+  description = "OCID of the landing-zone API/ingress NSG for cluster load balancers."
+  default     = ""
+}
+
+variable "existing_controlplane_nsg_id" {
+  type        = string
+  description = "OCID of the landing-zone control plane NSG."
+  default     = ""
+}
+
+variable "existing_compute_nsg_id" {
+  type        = string
+  description = "OCID of the landing-zone compute NSG."
+  default     = ""
+}

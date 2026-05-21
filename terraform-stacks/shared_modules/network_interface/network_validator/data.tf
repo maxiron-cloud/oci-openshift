@@ -4,8 +4,10 @@ data "oci_core_vcn" "existing_vcn" {
 }
 
 
-# NSG lookup - Automatic discovery
+# NSG lookup - regex discovery when explicit OCIDs are not provided
 data "oci_core_network_security_groups" "existing_lb_nsgs" {
+  count = local.use_explicit_nsgs ? 0 : 1
+
   compartment_id = var.compartment_ocid
   vcn_id         = var.existing_vcn_id
 
@@ -17,6 +19,8 @@ data "oci_core_network_security_groups" "existing_lb_nsgs" {
 }
 
 data "oci_core_network_security_groups" "existing_controlplane_nsgs" {
+  count = local.use_explicit_nsgs ? 0 : 1
+
   compartment_id = var.compartment_ocid
   vcn_id         = var.existing_vcn_id
 
@@ -28,6 +32,8 @@ data "oci_core_network_security_groups" "existing_controlplane_nsgs" {
 }
 
 data "oci_core_network_security_groups" "existing_compute_nsgs" {
+  count = local.use_explicit_nsgs ? 0 : 1
+
   compartment_id = var.compartment_ocid
   vcn_id         = var.existing_vcn_id
 
@@ -102,15 +108,15 @@ data "oci_core_route_tables" "existing_public_routes" {
 
 # NSG Security Rules - for validation and rule management
 data "oci_core_network_security_group_security_rules" "existing_lb_rules" {
-  network_security_group_id = data.oci_core_network_security_groups.existing_lb_nsgs.network_security_groups[0].id
+  network_security_group_id = local.lb_nsg_id
 }
 
 data "oci_core_network_security_group_security_rules" "existing_controlplane_rules" {
-  network_security_group_id = data.oci_core_network_security_groups.existing_controlplane_nsgs.network_security_groups[0].id
+  network_security_group_id = local.controlplane_nsg_id
 }
 
 data "oci_core_network_security_group_security_rules" "existing_compute_rules" {
-  network_security_group_id = data.oci_core_network_security_groups.existing_compute_nsgs.network_security_groups[0].id
+  network_security_group_id = local.compute_nsg_id
 }
 
 # Subnet data sources for property validation

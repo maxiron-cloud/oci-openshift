@@ -365,6 +365,24 @@ variable "existing_public_subnet_id" {
   default     = ""
 }
 
+variable "existing_lb_nsg_id" {
+  description = "OCID of the landing-zone API/ingress NSG for cluster load balancers when use_existing_network is true."
+  type        = string
+  default     = ""
+}
+
+variable "existing_controlplane_nsg_id" {
+  description = "OCID of the landing-zone control plane NSG when use_existing_network is true."
+  type        = string
+  default     = ""
+}
+
+variable "existing_compute_nsg_id" {
+  description = "OCID of the landing-zone compute NSG when use_existing_network is true."
+  type        = string
+  default     = ""
+}
+
 variable "object_storage_namespace" {
   type        = string
   description = "The OCI Object Storage namespace for the tenancy. See https://docs.oracle.com/en-us/iaas/Content/Object/Tasks/understandingnamespaces.htm"

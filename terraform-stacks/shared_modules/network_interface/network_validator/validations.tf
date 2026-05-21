@@ -24,30 +24,36 @@ check "required_gateways" {
 
 check "required_nsgs" {
   assert {
-    condition     = length(data.oci_core_network_security_groups.existing_lb_nsgs.network_security_groups) > 0
-    error_message = "❌ Missing Load Balancer NSG: No NSG with *lb* pattern found in VCN ${var.existing_vcn_id}. OpenShift requires load balancer NSGs."
+    condition     = local.lb_nsg_id != ""
+    error_message = "❌ Missing Load Balancer NSG: No NSG with *lb*|*api*|*ingress* pattern found in VCN ${var.existing_vcn_id}, and existing_lb_nsg_id was not set. OpenShift requires load balancer NSGs."
   }
 
   assert {
-    condition     = length(data.oci_core_network_security_groups.existing_controlplane_nsgs.network_security_groups) > 0
-    error_message = "❌ Missing Control Plane NSG: No NSG with *controlplane* pattern found in VCN ${var.existing_vcn_id}. OpenShift requires control plane NSGs."
+    condition     = local.controlplane_nsg_id != ""
+    error_message = "❌ Missing Control Plane NSG: No NSG with *controlplane* pattern found in VCN ${var.existing_vcn_id}, and existing_controlplane_nsg_id was not set. OpenShift requires control plane NSGs."
   }
 
   assert {
-    condition     = length(data.oci_core_network_security_groups.existing_compute_nsgs.network_security_groups) > 0
-    error_message = "❌ Missing Compute NSG: No NSG with *compute* pattern found in VCN ${var.existing_vcn_id}. OpenShift requires compute NSGs."
+    condition     = local.compute_nsg_id != ""
+    error_message = "❌ Missing Compute NSG: No NSG with *compute* pattern found in VCN ${var.existing_vcn_id}, and existing_compute_nsg_id was not set. OpenShift requires compute NSGs."
   }
 }
 
 check "required_security_lists" {
   assert {
-    condition     = length(data.oci_core_security_lists.existing_private.security_lists) > 0
-    error_message = "❌ Missing Private Security List: No security list with *private* pattern found in VCN ${var.existing_vcn_id}."
+    condition = (
+      local.skip_legacy_security_list_validation ||
+      length(data.oci_core_security_lists.existing_private.security_lists) > 0
+    )
+    error_message = "❌ Missing Private Security List: No security list with *private* pattern found in VCN ${var.existing_vcn_id}. Landing-zone NSG-only networks should pass existing_lb_nsg_id, existing_controlplane_nsg_id, and existing_compute_nsg_id."
   }
 
   assert {
-    condition     = length(data.oci_core_security_lists.existing_public.security_lists) > 0
-    error_message = "❌ Missing Public Security List: No security list with *public* pattern found in VCN ${var.existing_vcn_id}."
+    condition = (
+      local.skip_legacy_security_list_validation ||
+      length(data.oci_core_security_lists.existing_public.security_lists) > 0
+    )
+    error_message = "❌ Missing Public Security List: No security list with *public* pattern found in VCN ${var.existing_vcn_id}. Landing-zone NSG-only networks should pass existing_lb_nsg_id, existing_controlplane_nsg_id, and existing_compute_nsg_id."
   }
 }
 
@@ -97,15 +103,15 @@ check "subnet_configurations" {
 
 check "security_rules" {
   assert {
-    condition     = length(data.oci_core_network_security_group_security_rules.existing_lb_rules) > 0
+    condition     = length(data.oci_core_network_security_group_security_rules.existing_lb_rules.security_rules) > 0
     error_message = "❌ Security Rule Error: LB NSG must have at least 1 rule."
   }
   assert {
-    condition     = length(data.oci_core_network_security_group_security_rules.existing_controlplane_rules) > 0
+    condition     = length(data.oci_core_network_security_group_security_rules.existing_controlplane_rules.security_rules) > 0
     error_message = "❌ Security Rule Error: Control Plane NSG must have at least 1 rule."
   }
   assert {
-    condition     = length(data.oci_core_network_security_group_security_rules.existing_compute_rules) > 0
+    condition     = length(data.oci_core_network_security_group_security_rules.existing_compute_rules.security_rules) > 0
     error_message = "❌ Security Rule Error: Compute NSG must have at least 1 rule."
   }
 }

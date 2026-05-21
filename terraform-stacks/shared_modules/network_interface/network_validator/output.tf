@@ -24,13 +24,13 @@ output "subnet_details" {
 output "nsg_details" {
   value = {
     lb_nsg = {
-      id = try(data.oci_core_network_security_groups.existing_lb_nsgs.network_security_groups[0].id, "")
+      id = local.lb_nsg_id
     }
     controlplane_nsg = {
-      id = try(data.oci_core_network_security_groups.existing_controlplane_nsgs.network_security_groups[0].id, "")
+      id = local.controlplane_nsg_id
     }
     compute_nsg = {
-      id = try(data.oci_core_network_security_groups.existing_compute_nsgs.network_security_groups[0].id, "")
+      id = local.compute_nsg_id
     }
   }
 }

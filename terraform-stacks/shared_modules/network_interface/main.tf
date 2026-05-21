@@ -38,4 +38,7 @@ module "network_validator" {
   existing_public_subnet_id             = var.existing_public_subnet_id
   existing_private_bare_metal_subnet_id = var.existing_private_bare_metal_subnet_id
   existing_private_ocp_subnet_id        = var.existing_private_ocp_subnet_id
+  existing_lb_nsg_id                    = var.existing_lb_nsg_id
+  existing_controlplane_nsg_id          = var.existing_controlplane_nsg_id
+  existing_compute_nsg_id               = var.existing_compute_nsg_id
 }
