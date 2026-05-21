@@ -6,8 +6,6 @@ data "oci_core_vcn" "existing_vcn" {
 
 # NSG lookup - regex discovery when explicit OCIDs are not provided
 data "oci_core_network_security_groups" "existing_lb_nsgs" {
-  count = local.use_explicit_nsgs ? 0 : 1
-
   compartment_id = var.compartment_ocid
   vcn_id         = var.existing_vcn_id
 
@@ -19,8 +17,6 @@ data "oci_core_network_security_groups" "existing_lb_nsgs" {
 }
 
 data "oci_core_network_security_groups" "existing_controlplane_nsgs" {
-  count = local.use_explicit_nsgs ? 0 : 1
-
   compartment_id = var.compartment_ocid
   vcn_id         = var.existing_vcn_id
 
@@ -32,8 +28,6 @@ data "oci_core_network_security_groups" "existing_controlplane_nsgs" {
 }
 
 data "oci_core_network_security_groups" "existing_compute_nsgs" {
-  count = local.use_explicit_nsgs ? 0 : 1
-
   compartment_id = var.compartment_ocid
   vcn_id         = var.existing_vcn_id
 
