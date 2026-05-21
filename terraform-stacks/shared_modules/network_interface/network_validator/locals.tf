@@ -18,4 +18,17 @@ locals {
     data.oci_core_network_security_groups.existing_compute_nsgs.network_security_groups[0].id,
     "",
   )
+
+  # OCI provider returns null (not []) when list APIs are denied or fail; coalesce so
+  # check conditions never call length(null). Terraform || does not short-circuit.
+  ig_gateways        = coalesce(data.oci_core_internet_gateways.existing_ig.gateways, [])
+  sgw_gateways       = coalesce(data.oci_core_service_gateways.existing_sgw.service_gateways, [])
+  nat_gateways       = coalesce(data.oci_core_nat_gateways.existing_nat.nat_gateways, [])
+  private_sec_lists  = coalesce(data.oci_core_security_lists.existing_private.security_lists, [])
+  public_sec_lists   = coalesce(data.oci_core_security_lists.existing_public.security_lists, [])
+  private_route_tbls = coalesce(data.oci_core_route_tables.existing_private_routes.route_tables, [])
+  public_route_tbls  = coalesce(data.oci_core_route_tables.existing_public_routes.route_tables, [])
+  lb_nsg_rules       = coalesce(data.oci_core_network_security_group_security_rules.existing_lb_rules.security_rules, [])
+  cp_nsg_rules       = coalesce(data.oci_core_network_security_group_security_rules.existing_controlplane_rules.security_rules, [])
+  compute_nsg_rules  = coalesce(data.oci_core_network_security_group_security_rules.existing_compute_rules.security_rules, [])
 }

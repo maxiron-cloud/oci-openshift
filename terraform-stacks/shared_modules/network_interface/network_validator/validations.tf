@@ -7,18 +7,18 @@ check "vcn_availability" {
 
 check "required_gateways" {
   assert {
-    condition     = length(data.oci_core_internet_gateways.existing_ig.gateways) > 0
-    error_message = "❌ Missing Internet Gateway: No Internet Gateway found in VCN ${var.existing_vcn_id}. OpenShift requires an Internet Gateway for external connectivity."
+    condition     = length(local.ig_gateways) > 0
+    error_message = "❌ Missing Internet Gateway: No Internet Gateway found in VCN ${var.existing_vcn_id} (network compartment ${var.compartment_ocid}). Verify networking_compartment_ocid and ormstack IAM."
   }
 
   assert {
-    condition     = length(data.oci_core_service_gateways.existing_sgw.service_gateways) > 0
-    error_message = "❌ Missing Service Gateway: No Service Gateway found in VCN ${var.existing_vcn_id}. OpenShift requires a Service Gateway for OCI service access."
+    condition     = length(local.sgw_gateways) > 0
+    error_message = "❌ Missing Service Gateway: No Service Gateway found in VCN ${var.existing_vcn_id} (network compartment ${var.compartment_ocid})."
   }
 
   assert {
-    condition     = length(data.oci_core_nat_gateways.existing_nat.nat_gateways) > 0
-    error_message = "❌ Missing NAT Gateway: No NAT Gateway found in VCN ${var.existing_vcn_id}. OpenShift requires a NAT Gateway for outbound internet access."
+    condition     = length(local.nat_gateways) > 0
+    error_message = "❌ Missing NAT Gateway: No NAT Gateway found in VCN ${var.existing_vcn_id} (network compartment ${var.compartment_ocid})."
   }
 }
 
@@ -41,30 +41,24 @@ check "required_nsgs" {
 
 check "required_security_lists" {
   assert {
-    condition = (
-      local.skip_legacy_security_list_validation ||
-      length(data.oci_core_security_lists.existing_private.security_lists) > 0
-    )
+    condition = local.skip_legacy_security_list_validation ? true : length(local.private_sec_lists) > 0
     error_message = "❌ Missing Private Security List: No security list with *private* pattern found in VCN ${var.existing_vcn_id}. Landing-zone NSG-only networks should pass existing_lb_nsg_id, existing_controlplane_nsg_id, and existing_compute_nsg_id."
   }
 
   assert {
-    condition = (
-      local.skip_legacy_security_list_validation ||
-      length(data.oci_core_security_lists.existing_public.security_lists) > 0
-    )
+    condition = local.skip_legacy_security_list_validation ? true : length(local.public_sec_lists) > 0
     error_message = "❌ Missing Public Security List: No security list with *public* pattern found in VCN ${var.existing_vcn_id}. Landing-zone NSG-only networks should pass existing_lb_nsg_id, existing_controlplane_nsg_id, and existing_compute_nsg_id."
   }
 }
 
 check "required_route_tables" {
   assert {
-    condition     = length(data.oci_core_route_tables.existing_private_routes.route_tables) > 0
+    condition     = length(local.private_route_tbls) > 0
     error_message = "❌ Missing Private Route Table: No route table with *private* pattern found in VCN ${var.existing_vcn_id}."
   }
 
   assert {
-    condition     = length(data.oci_core_route_tables.existing_public_routes.route_tables) > 0
+    condition     = length(local.public_route_tbls) > 0
     error_message = "❌ Missing Public Route Table: No route table with *public* pattern found in VCN ${var.existing_vcn_id}."
   }
 }
@@ -103,15 +97,15 @@ check "subnet_configurations" {
 
 check "security_rules" {
   assert {
-    condition     = length(data.oci_core_network_security_group_security_rules.existing_lb_rules.security_rules) > 0
+    condition     = local.use_explicit_nsgs ? true : length(local.lb_nsg_rules) > 0
     error_message = "❌ Security Rule Error: LB NSG must have at least 1 rule."
   }
   assert {
-    condition     = length(data.oci_core_network_security_group_security_rules.existing_controlplane_rules.security_rules) > 0
+    condition     = local.use_explicit_nsgs ? true : length(local.cp_nsg_rules) > 0
     error_message = "❌ Security Rule Error: Control Plane NSG must have at least 1 rule."
   }
   assert {
-    condition     = length(data.oci_core_network_security_group_security_rules.existing_compute_rules.security_rules) > 0
+    condition     = local.use_explicit_nsgs ? true : length(local.compute_nsg_rules) > 0
     error_message = "❌ Security Rule Error: Compute NSG must have at least 1 rule."
   }
 }
