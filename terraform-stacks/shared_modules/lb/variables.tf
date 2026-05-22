@@ -34,6 +34,12 @@ variable "op_subnet_public" {
   type = string
 }
 
+variable "op_subnet_public_api" {
+  type        = string
+  description = "Public subnet for external API LB (defaults to op_subnet_public when empty)."
+  default     = ""
+}
+
 variable "op_network_security_group_cluster_lb_nsg" {
   type = string
 }

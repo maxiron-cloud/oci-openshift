@@ -34,4 +34,14 @@ locals {
 
   # how long resource creation will be paused to allow for newly created tagging resources to reach consistency
   wait_for_new_tag_consistency_wait_time = "30s"
+
+  # Brownfield (BYON): load balancers and bastion belong in the network compartment per landing-zone IAM.
+  load_balancer_compartment_ocid = var.use_existing_network && var.networking_compartment_ocid != "" ? var.networking_compartment_ocid : var.compartment_ocid
+  bastion_compartment_ocid = var.use_existing_network && var.networking_compartment_ocid != "" ? var.networking_compartment_ocid : var.compartment_ocid
+
+  # Landing-zone: ingress subnet for apps LB; api subnet for public API LB when provided.
+  lb_public_subnet_for_apps = var.use_existing_network ? var.existing_public_subnet_id : ""
+  lb_public_subnet_for_api = var.use_existing_network ? (
+    var.existing_api_public_subnet_id != "" ? var.existing_api_public_subnet_id : var.existing_public_subnet_id
+  ) : ""
 }

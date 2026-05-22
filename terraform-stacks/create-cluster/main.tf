@@ -12,6 +12,8 @@ terraform {
   }
 }
 
+# Region only: OCI Resource Manager auto-detects Resource Principal (ormstack).
+# Local runs use API key from ~/.oci/config or OCI_CONFIG_FILE — do not set auth = "ResourcePrincipal" in RM.
 provider "oci" {
   region = var.region
 }
@@ -61,6 +63,7 @@ module "iam" {
   cluster_name                = var.cluster_name
   networking_compartment_ocid = local.existing_networking_compartment_ocid
   dns_compartment_ocid        = var.dns_compartment_ocid != "" ? var.dns_compartment_ocid : var.compartment_ocid
+  skip_cluster_iam_policies   = var.skip_cluster_iam_policies
 
   // dependency on tags
   op_openshift_tag_namespace     = module.tags.op_openshift_tag_namespace
@@ -124,7 +127,7 @@ module "network" {
 module "load_balancer" {
   source = "../shared_modules/lb"
 
-  compartment_ocid = var.compartment_ocid
+  compartment_ocid = local.load_balancer_compartment_ocid
   cluster_name     = var.cluster_name
 
   enable_public_api_lb  = var.enable_public_api_lb
@@ -138,7 +141,8 @@ module "load_balancer" {
 
   // Depedency on networks
   op_subnet_private_ocp                    = module.network.op_subnet_private_ocp
-  op_subnet_public                         = module.network.op_subnet_public
+  op_subnet_public                         = var.use_existing_network ? local.lb_public_subnet_for_apps : module.network.op_subnet_public
+  op_subnet_public_api                     = var.use_existing_network ? local.lb_public_subnet_for_api : module.network.op_subnet_public
   op_network_security_group_cluster_lb_nsg = module.network.op_network_security_group_cluster_lb_nsg
 
 }
@@ -158,7 +162,7 @@ module "waf" {
 module "bastion" {
   source = "../shared_modules/bastion"
 
-  compartment_ocid      = var.compartment_ocid
+  compartment_ocid      = local.bastion_compartment_ocid
   cluster_name          = var.cluster_name
   enable_bastion        = var.enable_bastion
   target_subnet_id      = module.network.op_subnet_private_ocp

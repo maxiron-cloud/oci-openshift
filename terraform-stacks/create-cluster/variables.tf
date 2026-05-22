@@ -360,7 +360,13 @@ variable "existing_private_bare_metal_subnet_id" {
 }
 
 variable "existing_public_subnet_id" {
-  description = "The OCID of the existing public subnet to use when use_existing_network is true."
+  description = "The OCID of the existing public subnet to use when use_existing_network is true (landing-zone ingress subnet for apps LB)."
+  type        = string
+  default     = ""
+}
+
+variable "existing_api_public_subnet_id" {
+  description = "Optional OCID of the landing-zone API public subnet. When set, public API LB uses this subnet instead of existing_public_subnet_id."
   type        = string
   default     = ""
 }
@@ -581,4 +587,16 @@ variable "boot_volume_backup_policy" {
   type        = string
   description = "OCI-managed backup policy level: bronze (weekly), silver (daily+weekly), gold (daily+weekly+monthly). Default: gold."
   default     = "gold"
+}
+
+variable "use_resource_principal" {
+  type        = bool
+  description = "Deprecated. OCI Resource Manager auto-detects Resource Principal when auth is omitted from the provider block. Ignored by Terraform."
+  default     = true
+}
+
+variable "skip_cluster_iam_policies" {
+  type        = bool
+  description = "Skip tenancy/network control-plane IAM policies when landing-zone pre-created them (see lz apply workload-openshift)."
+  default     = false
 }

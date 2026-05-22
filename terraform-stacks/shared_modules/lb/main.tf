@@ -22,11 +22,15 @@ resource "oci_load_balancer_load_balancer" "openshift_api_int_lb" {
   defined_tags = var.defined_tags
 }
 
+locals {
+  api_public_subnet_id = var.op_subnet_public_api != "" ? var.op_subnet_public_api : var.op_subnet_public
+}
+
 resource "oci_load_balancer_load_balancer" "openshift_api_lb" {
   compartment_id             = var.compartment_ocid
   display_name               = "${var.cluster_name}-openshift_api_lb"
   shape                      = "flexible"
-  subnet_ids                 = var.enable_public_api_lb ? [var.op_subnet_public] : [var.op_subnet_private_ocp]
+  subnet_ids                 = var.enable_public_api_lb ? [local.api_public_subnet_id] : [var.op_subnet_private_ocp]
   is_private                 = var.enable_public_api_lb ? false : true
   network_security_group_ids = [var.op_network_security_group_cluster_lb_nsg]
   shape_details {

@@ -206,3 +206,9 @@ variable "existing_public_subnet_id" {
   type        = string
   default     = ""
 }
+
+variable "use_resource_principal" {
+  type        = bool
+  description = "Deprecated. OCI Resource Manager auto-detects Resource Principal when auth is omitted from the provider block. Ignored by Terraform."
+  default     = true
+}

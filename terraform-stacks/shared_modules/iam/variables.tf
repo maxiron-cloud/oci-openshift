@@ -30,3 +30,9 @@ variable "dns_compartment_ocid" {
   type        = string
   description = "Compartment OCID where DNS zone exists for cert-manager DNS-01 challenge"
 }
+
+variable "skip_cluster_iam_policies" {
+  type        = bool
+  description = "Skip tenancy/network control-plane policies when pre-created by landing-zone."
+  default     = false
+}

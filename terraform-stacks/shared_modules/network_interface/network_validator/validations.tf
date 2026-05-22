@@ -7,17 +7,17 @@ check "vcn_availability" {
 
 check "required_gateways" {
   assert {
-    condition     = length(local.ig_gateways) > 0
+    condition     = local.brownfield_lz_network ? true : length(local.ig_gateways) > 0
     error_message = "❌ Missing Internet Gateway: No Internet Gateway found in VCN ${var.existing_vcn_id} (network compartment ${var.compartment_ocid}). Verify networking_compartment_ocid and ormstack IAM."
   }
 
   assert {
-    condition     = length(local.sgw_gateways) > 0
+    condition     = local.brownfield_lz_network ? true : length(local.sgw_gateways) > 0
     error_message = "❌ Missing Service Gateway: No Service Gateway found in VCN ${var.existing_vcn_id} (network compartment ${var.compartment_ocid})."
   }
 
   assert {
-    condition     = length(local.nat_gateways) > 0
+    condition     = local.brownfield_lz_network ? true : length(local.nat_gateways) > 0
     error_message = "❌ Missing NAT Gateway: No NAT Gateway found in VCN ${var.existing_vcn_id} (network compartment ${var.compartment_ocid})."
   }
 }
@@ -53,12 +53,12 @@ check "required_security_lists" {
 
 check "required_route_tables" {
   assert {
-    condition     = length(local.private_route_tbls) > 0
+    condition     = local.brownfield_lz_network ? true : length(local.private_route_tbls) > 0
     error_message = "❌ Missing Private Route Table: No route table with *private* pattern found in VCN ${var.existing_vcn_id}."
   }
 
   assert {
-    condition     = length(local.public_route_tbls) > 0
+    condition     = local.brownfield_lz_network ? true : length(local.public_route_tbls) > 0
     error_message = "❌ Missing Public Route Table: No route table with *public* pattern found in VCN ${var.existing_vcn_id}."
   }
 }
