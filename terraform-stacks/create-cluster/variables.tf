@@ -589,12 +589,6 @@ variable "boot_volume_backup_policy" {
   default     = "gold"
 }
 
-variable "use_resource_principal" {
-  type        = bool
-  description = "Deprecated. OCI Resource Manager auto-detects Resource Principal when auth is omitted from the provider block. Ignored by Terraform."
-  default     = true
-}
-
 variable "skip_cluster_iam_policies" {
   type        = bool
   description = "Skip tenancy/network control-plane IAM policies when landing-zone pre-created them (see lz apply workload-openshift)."

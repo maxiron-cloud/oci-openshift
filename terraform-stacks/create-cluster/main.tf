@@ -12,16 +12,18 @@ terraform {
   }
 }
 
-# Region only: OCI Resource Manager auto-detects Resource Principal (ormstack).
-# Local runs use API key from ~/.oci/config or OCI_CONFIG_FILE — do not set auth = "ResourcePrincipal" in RM.
+# OCI Resource Manager only: stack Resource Principal (ormstack). Do not omit auth — RM
+# otherwise runs Terraform as the API user that submitted the job (ocp-provisioner).
 provider "oci" {
   region = var.region
+  auth   = "ResourcePrincipal"
 }
 
 # Home Region Terraform Provider
 provider "oci" {
   alias  = "home"
   region = local.home_region
+  auth   = "ResourcePrincipal"
 }
 
 module "meta" {
