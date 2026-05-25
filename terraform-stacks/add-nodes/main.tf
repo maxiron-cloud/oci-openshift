@@ -14,13 +14,11 @@ terraform {
 
 provider "oci" {
   region = var.region
-  auth   = "ResourcePrincipal"
 }
 
 provider "oci" {
   alias  = "home"
   region = local.home_region
-  auth   = "ResourcePrincipal"
 }
 
 module "tags" {

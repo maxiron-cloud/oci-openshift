@@ -12,18 +12,18 @@ terraform {
   }
 }
 
-# OCI Resource Manager only: stack Resource Principal (ormstack). Do not omit auth — RM
-# otherwise runs Terraform as the API user that submitted the job (ocp-provisioner).
+# OCI Resource Manager: region only — do not set auth = "ResourcePrincipal" here. RM does not
+# inject OCI_RESOURCE_PRINCIPAL_VERSION; explicit ResourcePrincipal fails in APPLY jobs.
+# Terraform in RMS runs as the job submitter (ocp-provisioner); grant LB/bastion in network
+# compartment on rwgroup-*-ocp-provisioner (see maxiron-landing-zone lz patch_openshift_iam).
 provider "oci" {
   region = var.region
-  auth   = "ResourcePrincipal"
 }
 
 # Home Region Terraform Provider
 provider "oci" {
   alias  = "home"
   region = local.home_region
-  auth   = "ResourcePrincipal"
 }
 
 module "meta" {
