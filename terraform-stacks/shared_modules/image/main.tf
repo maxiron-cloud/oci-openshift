@@ -10,7 +10,7 @@ terraform {
 
 // Skip paravirtualized image only when both cp and compute are BM
 resource "oci_core_image" "openshift_image_paravirtualized" {
-  count          = var.create_openshift_instances && (!var.is_control_plane_iscsi_type || !var.is_compute_iscsi_type) ? 1 : 0
+  count          = var.create_openshift_instances && !var.use_placeholder_boot_image && (!var.is_control_plane_iscsi_type || !var.is_compute_iscsi_type) ? 1 : 0
   compartment_id = var.compartment_ocid
   display_name   = "${var.image_name}-paravirtualized"
   launch_mode    = "PARAVIRTUALIZED"
@@ -34,7 +34,7 @@ resource "oci_core_image" "openshift_image_paravirtualized" {
 
 // Skip native image only when both cp and compute are VM
 resource "oci_core_image" "openshift_image_native" {
-  count          = var.create_openshift_instances && (var.is_control_plane_iscsi_type || var.is_compute_iscsi_type) ? 1 : 0
+  count          = var.create_openshift_instances && !var.use_placeholder_boot_image && (var.is_control_plane_iscsi_type || var.is_compute_iscsi_type) ? 1 : 0
   compartment_id = var.compartment_ocid
   display_name   = "${var.image_name}-native"
   launch_mode    = "NATIVE"

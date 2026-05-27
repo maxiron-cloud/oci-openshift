@@ -85,6 +85,8 @@ module "image" {
   is_control_plane_iscsi_type = local.is_control_plane_iscsi_type
   is_compute_iscsi_type       = local.is_compute_iscsi_type
   openshift_image_source_uri  = var.openshift_image_source_uri
+  use_placeholder_boot_image  = var.use_placeholder_boot_image
+  placeholder_boot_image_ocid = var.placeholder_boot_image_ocid
   control_plane_shape         = var.control_plane_shape
   compute_shape               = var.compute_shape
 

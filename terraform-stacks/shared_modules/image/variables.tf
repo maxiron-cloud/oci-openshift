@@ -33,3 +33,13 @@ variable "control_plane_shape" {
 variable "compute_shape" {
   type = string
 }
+
+variable "use_placeholder_boot_image" {
+  type    = bool
+  default = false
+}
+
+variable "placeholder_boot_image_ocid" {
+  type    = string
+  default = ""
+}

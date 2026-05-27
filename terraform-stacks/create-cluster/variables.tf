@@ -37,6 +37,18 @@ variable "openshift_image_source_uri" {
   default     = "TODO"
 }
 
+variable "use_placeholder_boot_image" {
+  type        = bool
+  default     = false
+  description = "When true, cluster nodes boot from placeholder_boot_image_ocid instead of importing openshift_image_source_uri. Used by maxiron-cli to discover MAC addresses before building the agent ISO."
+}
+
+variable "placeholder_boot_image_ocid" {
+  type        = string
+  default     = ""
+  description = "OCI image OCID for placeholder OS (Oracle Linux) used when use_placeholder_boot_image is true."
+}
+
 variable "tag_namespace_compartment_ocid_resource_tagging" {
   type        = string
   description = "<strong><em>(Required)</em></strong> - <strong>WARNING</strong> - The compartment OCID containing the OpenShift on OCI resource attribution tags. The tag namespace and defined tag for OpenShift on OCI resource attribution should be as follows: {\"openshift-tags\": {\"openshift-resource\": \"openshift-resource-infra\"}}. They can be created using the <a href='https://github.com/oracle-quickstart/oci-openshift/releases/latest/download/create-resource-attribution-tags.zip'>create-resource-attribution-tags</a> Terraform stack. It is required to create the OpenShift on OCI resource attribution tags prior to creating any OpenShift clusters."
