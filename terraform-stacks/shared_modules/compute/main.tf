@@ -13,7 +13,7 @@ resource "oci_core_instance" "control_plane_node" {
   compartment_id      = var.compartment_ocid
   availability_domain = each.value.ad_name
   fault_domain        = var.distribute_cp_instances_across_fds ? each.value.fault_domain : null
-  display_name        = "${var.cluster_name}-cp-${each.value.index}"
+  display_name        = "${var.cluster_name}-master-${each.value.index}"
   shape               = var.control_plane_shape
 
   defined_tags = {
@@ -22,7 +22,7 @@ resource "oci_core_instance" "control_plane_node" {
   }
 
   create_vnic_details {
-    display_name              = "${var.cluster_name}-cp-${each.value.index}"
+    display_name              = "${var.cluster_name}-master-${each.value.index}"
     assign_private_dns_record = "true"
     assign_public_ip          = "false"
     nsg_ids = [
@@ -59,7 +59,7 @@ resource "oci_core_instance" "compute_node" {
   compartment_id      = var.compartment_ocid
   availability_domain = each.value.ad_name
   fault_domain        = var.distribute_compute_instances_across_fds ? each.value.fault_domain : null
-  display_name        = "${var.cluster_name}-compute-${each.value.index}"
+  display_name        = "${var.cluster_name}-worker-${each.value.index}"
   shape               = var.compute_shape
 
   defined_tags = {
@@ -68,7 +68,7 @@ resource "oci_core_instance" "compute_node" {
   }
 
   create_vnic_details {
-    display_name              = "${var.cluster_name}-compute-${each.value.index}"
+    display_name              = "${var.cluster_name}-worker-${each.value.index}"
     assign_private_dns_record = "true"
     assign_public_ip          = "false"
     subnet_id                 = var.is_compute_iscsi_type ? var.op_subnet_private_bare_metal : var.op_subnet_private_ocp
