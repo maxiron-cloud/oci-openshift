@@ -53,23 +53,27 @@ resource "oci_core_image" "openshift_image_native" {
   }
 }
 
+locals {
+  openshift_paravirtualized_image_id = var.use_placeholder_boot_image ? var.placeholder_boot_image_ocid : try(oci_core_image.openshift_image_paravirtualized[0].id, "")
+  openshift_native_image_id          = var.use_placeholder_boot_image ? var.placeholder_boot_image_ocid : try(oci_core_image.openshift_image_native[0].id, "")
+}
 
 resource "oci_core_shape_management" "imaging_control_plane_shape" {
   count          = var.create_openshift_instances ? 1 : 0
   compartment_id = var.compartment_ocid
-  image_id       = var.is_control_plane_iscsi_type ? oci_core_image.openshift_image_native[0].id : oci_core_image.openshift_image_paravirtualized[0].id
+  image_id       = var.is_control_plane_iscsi_type ? local.openshift_native_image_id : local.openshift_paravirtualized_image_id
   shape_name     = var.control_plane_shape
 }
 
 resource "oci_core_shape_management" "imaging_compute_shape" {
   count          = var.create_openshift_instances ? 1 : 0
   compartment_id = var.compartment_ocid
-  image_id       = var.is_compute_iscsi_type ? oci_core_image.openshift_image_native[0].id : oci_core_image.openshift_image_paravirtualized[0].id
+  image_id       = var.is_compute_iscsi_type ? local.openshift_native_image_id : local.openshift_paravirtualized_image_id
   shape_name     = var.compute_shape
 }
 
 resource "oci_core_compute_image_capability_schema" "openshift_image_capability_schema_paravirtualized" {
-  count                                               = var.create_openshift_instances && (!var.is_control_plane_iscsi_type || !var.is_compute_iscsi_type) ? 1 : 0
+  count                                               = var.create_openshift_instances && !var.use_placeholder_boot_image && (!var.is_control_plane_iscsi_type || !var.is_compute_iscsi_type) ? 1 : 0
   compartment_id                                      = var.compartment_ocid
   compute_global_image_capability_schema_version_name = local.global_image_capability_schemas[0].current_version_name
   image_id                                            = oci_core_image.openshift_image_paravirtualized[0].id
@@ -78,7 +82,7 @@ resource "oci_core_compute_image_capability_schema" "openshift_image_capability_
 }
 
 resource "oci_core_compute_image_capability_schema" "openshift_image_capability_schema_native" {
-  count                                               = var.create_openshift_instances && (var.is_control_plane_iscsi_type || var.is_compute_iscsi_type) ? 1 : 0
+  count                                               = var.create_openshift_instances && !var.use_placeholder_boot_image && (var.is_control_plane_iscsi_type || var.is_compute_iscsi_type) ? 1 : 0
   compartment_id                                      = var.compartment_ocid
   compute_global_image_capability_schema_version_name = local.global_image_capability_schemas[0].current_version_name
   image_id                                            = oci_core_image.openshift_image_native[0].id
