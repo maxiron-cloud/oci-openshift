@@ -9,7 +9,15 @@ terraform {
 }
 # control plane nodes
 resource "oci_core_instance" "control_plane_node" {
-  for_each            = var.create_openshift_instances ? var.cp_node_map : {}
+  for_each = var.create_openshift_instances ? var.cp_node_map : {}
+
+  depends_on = concat(
+    local.reserve_rendezvous_private_ip ? [oci_core_private_ip.rendezvous[0]] : [],
+    local.rendezvous_cp_key != null && each.key != local.rendezvous_cp_key
+      ? [oci_core_instance.control_plane_node[local.rendezvous_cp_key]]
+      : [],
+  )
+
   compartment_id      = var.compartment_ocid
   availability_domain = each.value.ad_name
   fault_domain        = var.distribute_cp_instances_across_fds ? each.value.fault_domain : null
@@ -28,8 +36,13 @@ resource "oci_core_instance" "control_plane_node" {
     nsg_ids = [
       var.op_network_security_group_cluster_controlplane_nsg,
     ]
-    subnet_id  = var.is_control_plane_iscsi_type ? var.op_subnet_private_bare_metal : var.op_subnet_private_ocp
-    private_ip = each.value.index == 1 && !var.is_control_plane_iscsi_type && local.is_abi ? var.rendezvous_ip : ""
+    subnet_id = var.is_control_plane_iscsi_type ? var.op_subnet_private_bare_metal : var.op_subnet_private_ocp
+    private_ip = (
+      each.value.index == 1 && !var.is_control_plane_iscsi_type && local.is_abi && !local.reserve_rendezvous_private_ip
+    ) ? var.rendezvous_ip : ""
+    private_ip_id = (
+      each.value.index == 1 && !var.is_control_plane_iscsi_type && local.is_abi && local.reserve_rendezvous_private_ip
+    ) ? oci_core_private_ip.rendezvous[0].id : null
   }
 
   source_details {
