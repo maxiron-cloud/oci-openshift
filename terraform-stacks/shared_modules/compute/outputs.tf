@@ -1,6 +1,6 @@
 output "cp_boot_volume_ids" {
   description = "List of boot volume OCIDs for all control-plane nodes."
-  value       = [for k, v in oci_core_instance.control_plane_node : v.boot_volume_id]
+  value       = [for k, v in local.control_plane_instances : v.boot_volume_id]
 }
 
 output "compute_boot_volume_ids" {

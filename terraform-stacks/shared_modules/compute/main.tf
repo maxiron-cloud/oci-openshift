@@ -7,13 +7,11 @@ terraform {
     }
   }
 }
-# control plane nodes
+# control plane nodes (rendezvous master excluded when rendezvous_first_cp; see rendezvous-master.tf)
 resource "oci_core_instance" "control_plane_node" {
-  for_each = var.create_openshift_instances ? var.cp_node_map : {}
+  for_each = var.create_openshift_instances ? local.cp_node_map_parallel : {}
 
-  # RMS requires a static depends_on list (no concat/conditionals). Reserving the
-  # rendezvous private IP before any master launch prevents DHCP from taking .20.
-  depends_on = [oci_core_private_ip.rendezvous]
+  depends_on = [oci_core_instance.control_plane_rendezvous]
 
   compartment_id      = var.compartment_ocid
   availability_domain = each.value.ad_name
@@ -35,11 +33,8 @@ resource "oci_core_instance" "control_plane_node" {
     ]
     subnet_id = var.is_control_plane_iscsi_type ? var.op_subnet_private_bare_metal : var.op_subnet_private_ocp
     private_ip = (
-      each.value.index == 1 && !var.is_control_plane_iscsi_type && local.is_abi && !local.reserve_rendezvous_private_ip
+      each.value.index == 1 && !var.is_control_plane_iscsi_type && local.is_abi && !local.rendezvous_first_cp
     ) ? var.rendezvous_ip : ""
-    private_ip_id = (
-      each.value.index == 1 && !var.is_control_plane_iscsi_type && local.is_abi && local.reserve_rendezvous_private_ip
-    ) ? oci_core_private_ip.rendezvous[0].id : null
   }
 
   source_details {
@@ -66,7 +61,7 @@ resource "oci_core_instance" "control_plane_node" {
 # compute nodes
 resource "oci_core_instance" "compute_node" {
   for_each            = var.create_openshift_instances ? var.compute_node_map : {}
-  depends_on          = [oci_core_instance.control_plane_node]
+  depends_on          = [oci_core_instance.control_plane_rendezvous, oci_core_instance.control_plane_node]
   compartment_id      = var.compartment_ocid
   availability_domain = each.value.ad_name
   fault_domain        = var.distribute_compute_instances_across_fds ? each.value.fault_domain : null
