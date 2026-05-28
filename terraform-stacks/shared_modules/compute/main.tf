@@ -11,12 +11,9 @@ terraform {
 resource "oci_core_instance" "control_plane_node" {
   for_each = var.create_openshift_instances ? var.cp_node_map : {}
 
-  depends_on = concat(
-    local.reserve_rendezvous_private_ip ? [oci_core_private_ip.rendezvous[0]] : [],
-    local.rendezvous_cp_key != null && each.key != local.rendezvous_cp_key
-      ? [oci_core_instance.control_plane_node[local.rendezvous_cp_key]]
-      : [],
-  )
+  # RMS requires a static depends_on list (no concat/conditionals). Reserving the
+  # rendezvous private IP before any master launch prevents DHCP from taking .20.
+  depends_on = [oci_core_private_ip.rendezvous]
 
   compartment_id      = var.compartment_ocid
   availability_domain = each.value.ad_name
