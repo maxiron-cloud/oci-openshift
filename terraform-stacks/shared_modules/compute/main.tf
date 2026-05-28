@@ -56,6 +56,7 @@ resource "oci_core_instance" "control_plane_node" {
 # compute nodes
 resource "oci_core_instance" "compute_node" {
   for_each            = var.create_openshift_instances ? var.compute_node_map : {}
+  depends_on          = [oci_core_instance.control_plane_node]
   compartment_id      = var.compartment_ocid
   availability_domain = each.value.ad_name
   fault_domain        = var.distribute_compute_instances_across_fds ? each.value.fault_domain : null
