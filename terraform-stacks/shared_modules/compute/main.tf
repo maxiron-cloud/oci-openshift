@@ -103,3 +103,54 @@ resource "oci_core_instance" "compute_node" {
     user_data = base64encode(file("${path.module}/userdata/iscsi-oci-configure-secondary-nic.sh"))
   }
 }
+
+# infra nodes
+# Provisioned exactly like compute/worker nodes (same compute NSG + subnet) and
+# registered with the "compute" instance role so the installer admits them as
+# workers. The dedicated `node-role.kubernetes.io/infra` role is applied
+# in-cluster after install (labels + MachineConfigPool), which lets ingress /
+# monitoring / logging be pinned onto these nodes. Set infra_count = 0 to skip.
+resource "oci_core_instance" "infra_node" {
+  for_each            = var.create_openshift_instances ? var.infra_node_map : {}
+  depends_on          = [oci_core_instance.control_plane_rendezvous, oci_core_instance.control_plane_node]
+  compartment_id      = var.compartment_ocid
+  availability_domain = each.value.ad_name
+  fault_domain        = var.distribute_infra_instances_across_fds ? each.value.fault_domain : null
+  display_name        = "${var.cluster_name}-infra-${each.value.index}"
+  shape               = var.infra_shape
+
+  defined_tags = {
+    "${var.op_openshift_tag_namespace}.${var.op_openshift_tag_instance_role}"         = "compute"
+    "${var.openshift_attribution_tag_namespace}.${var.openshift_attribution_tag_key}" = var.openshift_tag_openshift_resource_value
+  }
+
+  create_vnic_details {
+    display_name              = "${var.cluster_name}-infra-${each.value.index}"
+    assign_private_dns_record = "true"
+    assign_public_ip          = "false"
+    subnet_id                 = var.is_infra_iscsi_type ? var.op_subnet_private_bare_metal : var.op_subnet_private_ocp
+    nsg_ids = [
+      var.op_network_security_group_cluster_compute_nsg,
+    ]
+  }
+
+  source_details {
+    source_type             = "image"
+    boot_volume_size_in_gbs = var.infra_boot_size
+    boot_volume_vpus_per_gb = var.infra_boot_volume_vpus_per_gb
+    kms_key_id              = var.kms_key_id != "" ? var.kms_key_id : null
+    source_id               = var.is_infra_iscsi_type ? var.op_image_openshift_image_native : var.op_image_openshift_image_paravirtualized
+  }
+
+  dynamic "shape_config" {
+    for_each = var.is_infra_iscsi_type ? [] : [1]
+    content {
+      memory_in_gbs = var.infra_memory
+      ocpus         = var.infra_ocpu
+    }
+  }
+
+  metadata = {
+    user_data = base64encode(file("${path.module}/userdata/iscsi-oci-configure-secondary-nic.sh"))
+  }
+}

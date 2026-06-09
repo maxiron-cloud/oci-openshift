@@ -64,6 +64,19 @@ variableGroups:
   - distribute_compute_instances_across_fds
   visible: create_openshift_instances
 
+- title: "Infra Node Configuration"
+  variables:
+  - infra_shape
+  - infra_count
+  - infra_ocpu
+  - infra_memory
+  - infra_boot_size
+  - infra_boot_volume_vpus_per_gb
+  - distribute_infra_instances_across_ads
+  - starting_ad_name_infra
+  - distribute_infra_instances_across_fds
+  visible: create_openshift_instances
+
 - title: "Networking Configuration"
   variables:
   - create_public_dns
@@ -429,6 +442,75 @@ variables:
     default: true
     required: true
 
+  infra_shape:
+    type: string
+    title: Infra Shape
+    default: "VM.Standard.E5.Flex"
+    required: true
+
+  infra_count:
+    type: integer
+    title: Infra Node Count
+    description: Number of dedicated infra/worker nodes (ingress, monitoring, logging, public exposure shard). 0 disables dedicated infra nodes.
+    minimum: 0
+    default: 0
+    required: true
+
+  infra_ocpu:
+    type: integer
+    title: Infra Node OCPU
+    minimum: 1
+    maximum: 144
+    default: 6
+    required: true
+
+  infra_memory:
+    type: integer
+    title: Infra Node Memory
+    minimum: 1
+    maximum: 1760
+    default: 32
+    required: true
+
+  infra_boot_size:
+    type: integer
+    title: Infra Node Boot Volume
+    minimum: 50
+    maximum: 32768
+    default: 300
+    required: true
+
+  infra_boot_volume_vpus_per_gb:
+    type: integer
+    title: Infra Node VPU
+    minimum: 10
+    maximum: 120
+    multipleOf: 10
+    default: 30
+    required: true
+
+  distribute_infra_instances_across_ads:
+    type: boolean
+    title: Distribute Infra Instances Across ADs
+    description: Select the checkbox to enable infra instances to be automatically distributed across ADs in a round-robin sequence starting from your selected AD. If unselected, then all nodes will be created in the selected starting AD.
+    default: true
+    required: true
+
+  starting_ad_name_infra:
+    type: oci:identity:availabilitydomain:name
+    title: Starting AD (Infra)
+    description: Specify the Availability Domain (AD) for initial infra node placement. Additional nodes will be automatically distributed across ADs in a round-robin sequence starting from your selected AD.
+    dependsOn:
+      compartmentId: ${compartment_ocid}
+    required: false
+
+  distribute_infra_instances_across_fds:
+    type: boolean
+    title: Distribute Infra Instances Across FDs
+    description: Select the checkbox to have infra instances distributed across Fault Domains in a round-robin sequence. If false, then the OCI Compute service will distribute them for you based on shape availability and other criteria.
+    default: true
+    required: true
+
   #
   # Networking Configuration Variables
   #
@@ -450,7 +532,7 @@ variables:
   enable_public_apps_lb:
     type: boolean
     title: Enable Public Apps Load Balancer
-    default: true
+    default: false
 
   zone_dns:
     type: string

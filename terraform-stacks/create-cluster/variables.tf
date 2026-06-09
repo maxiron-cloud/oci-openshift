@@ -306,6 +306,81 @@ variable "distribute_compute_instances_across_fds" {
   default     = true
 }
 
+# ── Infra nodes ─────────────────────────────────────────────────────────────
+# Dedicated infra/worker nodes for ingress, monitoring, logging and the public
+# exposure shard (maxiron-cli exposure lbMode=infra-node). Provisioned like
+# compute/worker nodes; the node-role.kubernetes.io/infra role is applied
+# in-cluster after install. Set infra_count = 0 (default) to skip entirely.
+variable "infra_shape" {
+  default     = "VM.Standard.E5.Flex"
+  type        = string
+  description = "Compute shape of the infra nodes. Defaults to VM.Standard.E5.Flex (same family as compute)."
+}
+
+variable "infra_count" {
+  default     = 0
+  type        = number
+  description = "The number of infra nodes in the cluster. The default value is 0 (no dedicated infra nodes)."
+}
+
+variable "infra_ocpu" {
+  default     = 6
+  type        = number
+  description = "The number of OCPUs for each infra node. For BM shapes, this value is ignored and determined by the shape selected."
+  validation {
+    condition     = var.infra_ocpu >= 1 && var.infra_ocpu <= 114
+    error_message = "The infra_ocpu value must be between 1 and 114."
+  }
+}
+
+variable "infra_memory" {
+  default     = 32
+  type        = number
+  description = "The amount of memory available for the shape of each infra node, in gigabytes. For BM shapes, this value is ignored and determined by the shape selected."
+  validation {
+    condition     = var.infra_memory >= 1 && var.infra_memory <= 1760
+    error_message = "The infra_memory value must be between 1 and 1760."
+  }
+}
+
+variable "infra_boot_size" {
+  default     = 300
+  type        = number
+  description = "The size of the boot volume of each infra node in GBs. The minimum value is 50 GB and the maximum value is 32,768 GB (32 TB)."
+  validation {
+    condition     = var.infra_boot_size >= 50 && var.infra_boot_size <= 32768
+    error_message = "The infra_boot_size value must be between 50 and 32768."
+  }
+}
+
+variable "infra_boot_volume_vpus_per_gb" {
+  default     = 30
+  type        = number
+  description = "The number of volume performance units (VPUs) that will be applied to this volume per GB of each infra node."
+  validation {
+    condition     = var.infra_boot_volume_vpus_per_gb >= 10 && var.infra_boot_volume_vpus_per_gb <= 120 && var.infra_boot_volume_vpus_per_gb % 10 == 0
+    error_message = "The infra_boot_volume_vpus_per_gb value must be between 10 and 120, and must be a multiple of 10."
+  }
+}
+
+variable "distribute_infra_instances_across_ads" {
+  description = "Whether infra instances should be distributed across ADs in a round-robin sequence starting from your selected AD. If false, then all nodes will be created in the selected starting AD."
+  type        = bool
+  default     = true
+}
+
+variable "starting_ad_name_infra" {
+  description = "Name of the AD to start infra node distribution from"
+  type        = string
+  default     = null
+}
+
+variable "distribute_infra_instances_across_fds" {
+  description = "Whether infra instances should be distributed across Fault Domains in a round-robin sequence. If false, then the OCI Compute service will select one for you based on shape availability."
+  type        = bool
+  default     = true
+}
+
 variable "create_public_dns" {
   type        = bool
   description = "Create a public DNS zone with your Base domain specified in Zone DNS. If this is not created, it is advised that you create a private DNS zone unless you are bringing your own DNS solution. To resolve cluster hostnames without DNS, users should add entries to /etc/hosts mapping the cluster hostnames to the IP address of the api_apps Load Balancer. The etc_hosts_entry output can be used for this purpose."
@@ -320,8 +395,8 @@ variable "enable_public_api_lb" {
 
 variable "enable_public_apps_lb" {
   type        = bool
-  description = "Create a Load Balancer for OpenShift applications (`*.apps.<cluster>.<base_domain>`) in the public subnet with a public IP address. This allows external users to access workloads and services deployed in the cluster. If disabled, the Apps Load Balancer will be created in a private subnet with a private IP, making application routes accessible only within the VCN or over a VPN/private network. Public access is useful for exposing applications to the internet, customer-facing services, or multi-tenant workloads. In on-premise setups (e.g., C3/PCA), \"public\" IPs may be RFC 1918 addresses that are still treated as public within the internal network. Coordinate with your network team for proper exposure."
-  default     = true
+  description = "Create a Load Balancer for OpenShift applications (`*.apps.<cluster>.<base_domain>`) in the public subnet with a public IP address. This allows external users to access workloads and services deployed in the cluster. If disabled, the Apps Load Balancer will be created in a private subnet with a private IP, making application routes accessible only within the VCN or over a VPN/private network. Default is private (false): in the MaxIron posture the OpenShift console and all app routes stay VPN-only, and Maximo is published via a dedicated public shard LB fronted by OCI WAAS edge. Coordinate with your network team before enabling public apps exposure."
+  default     = false
 }
 
 variable "create_private_dns" {
@@ -397,6 +472,12 @@ variable "existing_controlplane_nsg_id" {
 
 variable "existing_compute_nsg_id" {
   description = "OCID of the landing-zone compute NSG when use_existing_network is true."
+  type        = string
+  default     = ""
+}
+
+variable "existing_apps_public_lb_nsg_id" {
+  description = "OCID of the landing-zone APPS-PUBLIC NSG for the Terraform exposure infra LB (lbMode=infra-node). Required when infra_count > 0 in landing-zone mode."
   type        = string
   default     = ""
 }
@@ -531,12 +612,6 @@ variable "allowed_apps_cidrs" {
   type        = list(string)
   description = "CIDRs allowed to reach cluster apps load balancer on ports 80 and 443. An empty list opens access to the entire internet (0.0.0.0/0). Example: [\"203.0.113.10/32\"]"
   default     = []
-}
-
-variable "enable_waf" {
-  type        = bool
-  description = "Attach an OCI Web Application Firewall policy to the apps load balancer for OWASP and bot protection."
-  default     = false
 }
 
 variable "enable_bastion" {

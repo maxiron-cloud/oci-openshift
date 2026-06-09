@@ -8,9 +8,9 @@ terraform {
   }
 }
 
-// Skip paravirtualized image only when both cp and compute are BM
+// Skip paravirtualized image only when every active tier (cp, compute, infra) is BM
 resource "oci_core_image" "openshift_image_paravirtualized" {
-  count          = var.create_openshift_instances && !var.use_placeholder_boot_image && (!var.is_control_plane_iscsi_type || !var.is_compute_iscsi_type) ? 1 : 0
+  count          = var.create_openshift_instances && !var.use_placeholder_boot_image && (!var.is_control_plane_iscsi_type || !var.is_compute_iscsi_type || (var.infra_count > 0 && !var.is_infra_iscsi_type)) ? 1 : 0
   compartment_id = var.compartment_ocid
   display_name   = "${var.image_name}-paravirtualized"
   launch_mode    = "PARAVIRTUALIZED"
@@ -32,9 +32,9 @@ resource "oci_core_image" "openshift_image_paravirtualized" {
   }
 }
 
-// Skip native image only when both cp and compute are VM
+// Skip native image only when every active tier (cp, compute, infra) is VM
 resource "oci_core_image" "openshift_image_native" {
-  count          = var.create_openshift_instances && !var.use_placeholder_boot_image && (var.is_control_plane_iscsi_type || var.is_compute_iscsi_type) ? 1 : 0
+  count          = var.create_openshift_instances && !var.use_placeholder_boot_image && (var.is_control_plane_iscsi_type || var.is_compute_iscsi_type || (var.infra_count > 0 && var.is_infra_iscsi_type)) ? 1 : 0
   compartment_id = var.compartment_ocid
   display_name   = "${var.image_name}-native"
   launch_mode    = "NATIVE"
@@ -72,6 +72,16 @@ resource "oci_core_shape_management" "imaging_compute_shape" {
   compartment_id = var.compartment_ocid
   image_id       = var.is_compute_iscsi_type ? local.openshift_native_image_id : local.openshift_paravirtualized_image_id
   shape_name     = var.compute_shape
+}
+
+# Register the infra shape's image compatibility only when it differs from the
+# control-plane and compute shapes (those are already registered above) — avoids
+# registering the same shape twice on the same image.
+resource "oci_core_shape_management" "imaging_infra_shape" {
+  count          = var.create_openshift_instances && !var.use_placeholder_boot_image && var.infra_count > 0 && var.infra_shape != var.compute_shape && var.infra_shape != var.control_plane_shape ? 1 : 0
+  compartment_id = var.compartment_ocid
+  image_id       = var.is_infra_iscsi_type ? local.openshift_native_image_id : local.openshift_paravirtualized_image_id
+  shape_name     = var.infra_shape
 }
 
 resource "oci_core_compute_image_capability_schema" "openshift_image_capability_schema_paravirtualized" {

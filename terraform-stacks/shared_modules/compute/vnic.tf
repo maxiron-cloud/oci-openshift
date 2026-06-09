@@ -41,3 +41,18 @@ data "oci_core_vnic" "compute_secondary_vnic" {
 
   depends_on = [oci_core_instance.compute_node]
 }
+
+data "oci_core_vnic_attachments" "infra_primary_vnic_attachments" {
+  for_each       = var.create_openshift_instances ? var.infra_node_map : {}
+  compartment_id = var.compartment_ocid
+  instance_id    = oci_core_instance.infra_node[each.key].id
+
+  depends_on = [oci_core_instance.infra_node]
+}
+
+data "oci_core_vnic" "infra_primary_vnic" {
+  for_each = var.create_openshift_instances && !var.is_infra_iscsi_type ? var.infra_node_map : {}
+  vnic_id  = data.oci_core_vnic_attachments.infra_primary_vnic_attachments[each.key].vnic_attachments[0].vnic_id
+
+  depends_on = [data.oci_core_vnic_attachments.infra_primary_vnic_attachments, oci_core_instance.infra_node]
+}

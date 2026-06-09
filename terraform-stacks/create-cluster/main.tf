@@ -33,8 +33,11 @@ module "meta" {
   starting_ad_name_compute                = var.starting_ad_name_compute
   distribute_cp_instances_across_ads      = var.distribute_cp_instances_across_ads
   distribute_compute_instances_across_ads = var.distribute_compute_instances_across_ads
+  distribute_infra_instances_across_ads   = var.distribute_infra_instances_across_ads
+  starting_ad_name_infra                  = var.starting_ad_name_infra
   control_plane_count                     = var.control_plane_count
   compute_count                           = var.compute_count
+  infra_count                             = var.infra_count
 }
 module "tags" {
   source = "../shared_modules/tags"
@@ -84,11 +87,14 @@ module "image" {
   image_name                  = var.cluster_name
   is_control_plane_iscsi_type = local.is_control_plane_iscsi_type
   is_compute_iscsi_type       = local.is_compute_iscsi_type
+  is_infra_iscsi_type         = local.is_infra_iscsi_type
   openshift_image_source_uri  = var.openshift_image_source_uri
   use_placeholder_boot_image  = var.use_placeholder_boot_image
   placeholder_boot_image_ocid = var.placeholder_boot_image_ocid
   control_plane_shape         = var.control_plane_shape
   compute_shape               = var.compute_shape
+  infra_shape                 = var.infra_shape
+  infra_count                 = var.infra_count
 
   // Depedency on tags
   defined_tags = module.resource_attribution_tags.openshift_resource_attribution_tag
@@ -148,21 +154,13 @@ module "load_balancer" {
   op_subnet_public                         = var.use_existing_network ? local.lb_public_subnet_for_apps : module.network.op_subnet_public
   op_subnet_public_api                     = var.use_existing_network ? local.lb_public_subnet_for_api : module.network.op_subnet_public
   op_network_security_group_cluster_lb_nsg = module.network.op_network_security_group_cluster_lb_nsg
+  infra_count                              = var.infra_count
+  op_apps_public_lb_nsg_id                 = var.existing_apps_public_lb_nsg_id
 
 }
 
-module "waf" {
-  source = "../shared_modules/waf"
-
-  compartment_ocid = var.compartment_ocid
-  cluster_name     = var.cluster_name
-  enable_waf       = var.enable_waf
-  apps_lb_id       = module.load_balancer.op_lb_openshift_apps_lb
-  defined_tags     = module.resource_attribution_tags.openshift_resource_attribution_tag
-
-  depends_on = [module.load_balancer]
-}
-
+# LB WAF removed: the apps LB is TCP passthrough (L4), so an LB-attached WAF
+# cannot inspect HTTPS. Public Maximo traffic is protected by OCI WAAS Edge (L7).
 module "bastion" {
   source = "../shared_modules/bastion"
 
@@ -238,12 +236,21 @@ module "compute" {
   compute_ocpu                    = var.compute_ocpu
   kms_key_id                      = var.kms_key_id
 
+  infra_shape                   = var.infra_shape
+  infra_boot_size               = var.infra_boot_size
+  infra_boot_volume_vpus_per_gb = var.infra_boot_volume_vpus_per_gb
+  infra_memory                  = var.infra_memory
+  infra_ocpu                    = var.infra_ocpu
+  is_infra_iscsi_type           = local.is_infra_iscsi_type
+
   distribute_cp_instances_across_fds      = var.distribute_cp_instances_across_fds
   distribute_compute_instances_across_fds = var.distribute_compute_instances_across_fds
+  distribute_infra_instances_across_fds   = var.distribute_infra_instances_across_fds
 
   // Dependency on AD placement
   cp_node_map      = module.meta.cp_node_map
   compute_node_map = module.meta.compute_node_map
+  infra_node_map   = module.meta.infra_node_map
 
   // Depedency on tags
   op_openshift_tag_boot_volume_type = module.tags.op_openshift_tag_boot_volume_type
@@ -271,6 +278,9 @@ module "compute" {
   op_lb_bs_openshift_cluster_infra-mcs_backend_set       = module.load_balancer.op_lb_bs_openshift_cluster_infra-mcs_backend_set
   op_lb_bs_openshift_cluster_infra-mcs_backend_set_2     = module.load_balancer.op_lb_bs_openshift_cluster_infra-mcs_backend_set_2
   op_lb_bs_openshift_cluster_infra-mcs_backend_set_api_2 = module.load_balancer.op_lb_bs_openshift_cluster_infra-mcs_backend_set_api_2
+  op_lb_openshift_exposure_infra_lb                      = module.load_balancer.op_lb_openshift_exposure_infra_lb
+  op_lb_bs_openshift_exposure_infra_http_backend_set     = module.load_balancer.op_lb_bs_openshift_exposure_infra_http_backend_set
+  op_lb_bs_openshift_exposure_infra_https_backend_set    = module.load_balancer.op_lb_bs_openshift_exposure_infra_https_backend_set
 }
 
 module "dns" {
@@ -351,10 +361,13 @@ module "manifests" {
   zone_dns              = var.zone_dns
   rendezvous_ip         = var.rendezvous_ip
   control_plane_count   = var.control_plane_count
-  compute_count         = var.compute_count
-  public_ssh_key        = var.public_ssh_key
-  cluster_name          = var.cluster_name
-  webserver_private_ip  = var.webserver_private_ip
+  # Infra nodes register as workers at install time (the infra role is applied
+  # in-cluster afterwards), so the install_config worker replica count must
+  # include them.
+  compute_count        = var.compute_count + var.infra_count
+  public_ssh_key       = var.public_ssh_key
+  cluster_name         = var.cluster_name
+  webserver_private_ip = var.webserver_private_ip
 
   // Dependency on ocir
   use_oracle_cloud_agent = var.use_oracle_cloud_agent
@@ -383,9 +396,9 @@ module "logging" {
   cluster_name     = var.cluster_name
   apps_lb_id       = module.load_balancer.op_lb_openshift_apps_lb
   api_lb_id        = module.load_balancer.op_lb_openshift_api_lb
-  # Pass static boolean for count — computed OCID cannot be used in count
-  enable_waf = var.enable_waf
-  waf_id     = module.waf.waf_id != null ? module.waf.waf_id : ""
+  # LB WAF removed (WAAS edge provides L7 protection)
+  enable_waf = false
+  waf_id     = ""
   # bastion_id removed — OCI Bastion does not support SERVICE logging; session logs are in OCI Audit
   log_retention_days = var.log_retention_days
   enable_flow_logs   = var.enable_flow_logs
@@ -406,9 +419,9 @@ module "monitoring" {
   tenant_name      = var.tenant_name
   apps_lb_id       = module.load_balancer.op_lb_openshift_apps_lb
   api_lb_id        = module.load_balancer.op_lb_openshift_api_lb
-  # Pass static boolean for count — computed OCID cannot be used in count
-  enable_waf        = var.enable_waf
-  waf_id            = module.waf.waf_id != null ? module.waf.waf_id : ""
+  # LB WAF removed (WAAS edge provides L7 protection)
+  enable_waf        = false
+  waf_id            = ""
   alert_webhook_url = var.alert_webhook_url
   alert_email       = var.alert_email
   defined_tags      = module.resource_attribution_tags.openshift_resource_attribution_tag
@@ -422,5 +435,5 @@ module "boot_volume_backup" {
   enable_boot_volume_backup = var.enable_boot_volume_backup
   boot_volume_backup_policy = var.boot_volume_backup_policy
   cp_boot_volume_ids        = module.compute.cp_boot_volume_ids
-  compute_boot_volume_ids   = module.compute.compute_boot_volume_ids
+  compute_boot_volume_ids   = concat(module.compute.compute_boot_volume_ids, module.compute.infra_boot_volume_ids)
 }

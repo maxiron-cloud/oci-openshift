@@ -30,6 +30,21 @@ variable "control_plane_shape" {
   type = string
 }
 
+variable "infra_shape" {
+  type    = string
+  default = ""
+}
+
+variable "is_infra_iscsi_type" {
+  type    = bool
+  default = false
+}
+
+variable "infra_count" {
+  type    = number
+  default = 0
+}
+
 variable "compute_shape" {
   type = string
 }

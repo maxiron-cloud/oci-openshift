@@ -14,6 +14,11 @@ output "open_shift_apps_lb_addr" {
   value = module.load_balancer.op_lb_openshift_apps_lb_ip_addr
 }
 
+output "open_shift_exposure_infra_lb_addr" {
+  description = "Public IP of the Terraform exposure infra LB (empty when infra_count=0)."
+  value       = module.load_balancer.op_lb_openshift_exposure_infra_lb_ip_addr
+}
+
 output "oci_ccm_config" {
   value = module.manifests.oci_ccm_config
 }
@@ -46,9 +51,4 @@ output "stack_version" {
 output "bastion_id" {
   description = "OCID of the OCI Bastion service (null when enable_bastion=false)."
   value       = module.bastion.bastion_id
-}
-
-output "waf_id" {
-  description = "OCID of the WAF attachment to the apps LB (null when enable_waf=false)."
-  value       = module.waf.waf_id
 }

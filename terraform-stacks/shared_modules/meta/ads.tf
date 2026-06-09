@@ -28,6 +28,7 @@ locals {
 
   cp_ads      = var.distribute_cp_instances_across_ads ? length(local.availability_domains) : 1
   compute_ads = var.distribute_compute_instances_across_ads ? length(local.availability_domains) : 1
+  infra_ads   = var.distribute_infra_instances_across_ads ? length(local.availability_domains) : 1
 
   # Get FDs for each AD
   fault_domains = {
@@ -37,14 +38,17 @@ locals {
   # Calculate base nodes per AD
   cp_nodes_per_ad      = floor(var.control_plane_count / local.cp_ads)
   compute_nodes_per_ad = floor(var.compute_count / local.compute_ads)
+  infra_nodes_per_ad   = floor(var.infra_count / local.infra_ads)
 
   # Calculate extra nodes to distribute
   cp_extra_nodes      = var.control_plane_count % local.cp_ads
   compute_extra_nodes = var.compute_count % local.compute_ads
+  infra_extra_nodes   = var.infra_count % local.infra_ads
 
   # This will extract just the number at the end after "AD-"
   starting_ad_index_cp      = var.starting_ad_name_cp != null ? (regex("AD-([0-9]+)$", var.starting_ad_name_cp)[0]) - 1 : 0 # Subtract 1 because AD indices typically start from 1
   starting_ad_index_compute = var.starting_ad_name_compute != null ? (regex("AD-([0-9]+)$", var.starting_ad_name_compute)[0]) - 1 : 0
+  starting_ad_index_infra   = var.starting_ad_name_infra != null ? (regex("AD-([0-9]+)$", var.starting_ad_name_infra)[0]) - 1 : 0
 
   # Create a map for node count per AD in round-robin fashion starting from AD specified from user
   cp_node_count_per_ad_map = {
@@ -55,6 +59,11 @@ locals {
   compute_node_count_per_ad_map = {
     for i in range(local.compute_ads) :
     local.availability_domains[(i + local.starting_ad_index_compute) % local.compute_ads].name => local.compute_nodes_per_ad + (i < local.compute_extra_nodes ? 1 : 0)
+  }
+
+  infra_node_count_per_ad_map = {
+    for i in range(local.infra_ads) :
+    local.availability_domains[(i + local.starting_ad_index_infra) % local.infra_ads].name => local.infra_nodes_per_ad + (i < local.infra_extra_nodes ? 1 : 0)
   }
 
   cp_node_count_per_ad_flattened = flatten([
@@ -68,6 +77,15 @@ locals {
 
   compute_node_count_per_ad_flattened = flatten([
     for ad_name, count in local.compute_node_count_per_ad_map : [
+      for i in range(count) : {
+        ad_name      = ad_name
+        fault_domain = local.fault_domains[ad_name][i % length(local.fault_domains[ad_name])].name
+      }
+    ]
+  ])
+
+  infra_node_count_per_ad_flattened = flatten([
+    for ad_name, count in local.infra_node_count_per_ad_map : [
       for i in range(count) : {
         ad_name      = ad_name
         fault_domain = local.fault_domains[ad_name][i % length(local.fault_domains[ad_name])].name
@@ -90,6 +108,15 @@ locals {
       ad_name      = val.ad_name
       fault_domain = val.fault_domain
       index        = idx + 1 + var.current_compute_count
+    }
+  }
+
+  infra_node_map = {
+    for idx, val in local.infra_node_count_per_ad_flattened :
+    idx => {
+      ad_name      = val.ad_name
+      fault_domain = val.fault_domain
+      index        = idx + 1 + var.current_infra_count
     }
   }
 

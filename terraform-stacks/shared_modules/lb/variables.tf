@@ -44,3 +44,15 @@ variable "op_network_security_group_cluster_lb_nsg" {
   type = string
 }
 
+variable "infra_count" {
+  type        = number
+  default     = 0
+  description = "When > 0, provision the Terraform-managed public exposure infra LB."
+}
+
+variable "op_apps_public_lb_nsg_id" {
+  type        = string
+  default     = ""
+  description = "APPS-PUBLIC NSG for the exposure infra LB (landing-zone bundle). Falls back to cluster LB NSG when empty."
+}
+

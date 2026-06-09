@@ -48,6 +48,36 @@ variable "compute_ocpu" {
   type = number
 }
 
+variable "infra_shape" {
+  type    = string
+  default = "VM.Standard.E5.Flex"
+}
+
+variable "infra_boot_size" {
+  type    = number
+  default = 300
+}
+
+variable "infra_boot_volume_vpus_per_gb" {
+  type    = number
+  default = 30
+}
+
+variable "infra_memory" {
+  type    = number
+  default = 32
+}
+
+variable "infra_ocpu" {
+  type    = number
+  default = 6
+}
+
+variable "is_infra_iscsi_type" {
+  type    = bool
+  default = false
+}
+
 variable "cluster_name" {
   type = string
 }
@@ -140,6 +170,21 @@ variable "op_lb_bs_openshift_cluster_infra-mcs_backend_set_api_2" {
   type = string
 }
 
+variable "op_lb_openshift_exposure_infra_lb" {
+  type    = string
+  default = ""
+}
+
+variable "op_lb_bs_openshift_exposure_infra_http_backend_set" {
+  type    = string
+  default = ""
+}
+
+variable "op_lb_bs_openshift_exposure_infra_https_backend_set" {
+  type    = string
+  default = ""
+}
+
 variable "installation_method" {
   type    = string
   default = "Assisted"
@@ -155,6 +200,11 @@ variable "compute_node_map" {
   type = map(any)
 }
 
+variable "infra_node_map" {
+  type    = map(any)
+  default = {}
+}
+
 variable "cp_node_map" {
   type = map(any)
 }
@@ -167,6 +217,12 @@ variable "distribute_cp_instances_across_fds" {
 variable "distribute_compute_instances_across_fds" {
   description = "Whether compute instances should be distributed across Fault Domains in a round-robin sequence. If false, then the system will select one for you based on shape availability."
   type        = bool
+}
+
+variable "distribute_infra_instances_across_fds" {
+  description = "Whether infra instances should be distributed across Fault Domains in a round-robin sequence. If false, then the system will select one for you based on shape availability."
+  type        = bool
+  default     = true
 }
 
 variable "openshift_attribution_tag_namespace" {

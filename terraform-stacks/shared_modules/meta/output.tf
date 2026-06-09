@@ -2,6 +2,10 @@ output "compute_node_map" {
   value = local.compute_node_map
 }
 
+output "infra_node_map" {
+  value = local.infra_node_map
+}
+
 output "cp_node_map" {
   value = local.cp_node_map
 }
@@ -22,6 +26,11 @@ output "node_distribution_summary" {
       total_nodes      = var.compute_count
       nodes_in_each_ad = local.compute_node_count_per_ad_map
       distribution     = local.compute_node_map
+    }
+    infra = {
+      total_nodes      = var.infra_count
+      nodes_in_each_ad = local.infra_node_count_per_ad_map
+      distribution     = local.infra_node_map
     }
   }
 }
